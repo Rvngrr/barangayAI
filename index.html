@@ -536,7 +536,7 @@
         <b>Select your model &amp; manage endpoints</b><p>Open the picker again and choose the new cloud model — the header chip updates to show it. Under <strong>Added Models</strong> you can enable/disable individual models or remove an endpoint. Your added endpoints are saved and survive reloads.</p></div></div>
 
       <div class="guide-step"><div class="guide-step-num">6</div><div class="guide-step-body">
-        <b>Adding a custom LOCAL endpoint</b><p>Running Ollama (or any OpenAI-compatible server) on another port or machine? Use the LOCAL card and paste its URL — e.g. <code class="guide-cmd">http://localhost:11434/v1</code> — add an optional key for protected servers, then <strong>Add</strong>. Same Test → Add flow.</p></div></div>
+        <b>Adding a custom LOCAL endpoint</b><p>Running Ollama (or any OpenAI-compatible server) on another port or machine? Use the LOCAL card and paste its URL — e.g. <code class="guide-cmd">http://127.0.0.1:11434/v1</code> — add an optional key for protected servers, then <strong>Add</strong>. Same Test → Add flow. Write local endpoints as <code>127.0.0.1</code>, not <code>localhost</code>: on Windows <code>localhost</code> resolves to IPv6 <code>::1</code> first and Ollama listens on IPv4 only, so it gets refused.</p></div></div>
     </section>
 
     <!-- PAGE 6 — Hour 3 Customize -->
@@ -775,8 +775,8 @@ git push</code></div></div>
           </div>
 
           <div style="display:grid;grid-template-columns:90px 1fr;border-bottom:1px solid var(--border-light);font-size:12.5px">
-            <div style="padding:10px 12px;background:var(--dc-blue-light);font-weight:700;color:var(--text-primary);display:flex;align-items:flex-start">localhost</div>
-            <div style="padding:10px 12px;color:var(--text-secondary);line-height:1.6">A special address that means "this computer." When you visit localhost:11434, you're talking to a server running on your own machine, not the internet. <span style="color:var(--text-muted);font-style:italic">Like calling your own phone — you're not calling someone else.</span></div>
+            <div style="padding:10px 12px;background:var(--dc-blue-light);font-weight:700;color:var(--text-primary);display:flex;align-items:flex-start">localhost / 127.0.0.1</div>
+            <div style="padding:10px 12px;color:var(--text-secondary);line-height:1.6">A special address that means "this computer." When you visit 127.0.0.1:11434, you're talking to a server running on your own machine, not the internet. <code>localhost</code> is the word form of the same address, but type the numbers when connecting a model — on Windows the word can point at IPv6 <code>::1</code>, which Ollama isn't listening on. <span style="color:var(--text-muted);font-style:italic">Like calling your own phone — you're not calling someone else.</span></div>
           </div>
 
           <div style="display:grid;grid-template-columns:90px 1fr;border-bottom:1px solid var(--border-light);font-size:12.5px">
@@ -927,7 +927,7 @@ git push</code></div></div>
         <summary><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>View installation requirements</summary>
         <div class="install-req-body">
           <div class="install-req-row"><b>OS</b><span>Windows 10/11, macOS 12+, or Linux</span></div>
-          <div class="install-req-row"><b>Ollama</b><span>Installed and running — <code data-ollama-cmd="start">OLLAMA_ORIGINS=* ollama serve</code> (free at ollama.com)</span></div>
+          <div class="install-req-row"><b>Ollama</b><span>Installed, then started with the bundled script — <code data-ollama-cmd="script">./start-ollama.sh</code> (free at ollama.com)</span></div>
           <div class="install-req-row"><b>RAM</b><span>4 GB minimum (1B models) · 8 GB comfortable (3B) · 16 GB+ for 7B and up</span></div>
           <div class="install-req-row"><b>Disk</b><span>1–5 GB free per model — downloaded once, then it works offline</span></div>
           <div class="install-req-row"><b>GPU</b><span>Optional. It speeds up replies, but CPU-only runs small models fine</span></div>
@@ -1111,14 +1111,14 @@ git push</code></div></div>
           <span>LOCAL</span>
         </div>
         <div class="endpoint-row">
-          <input class="settings-input" id="local-endpoint" type="text" placeholder="Paste endpoint URL, e.g. http://localhost:11434/v1" autocomplete="off">
+          <input class="settings-input" id="local-endpoint" type="text" placeholder="Paste endpoint URL, e.g. http://127.0.0.1:11434/v1" autocomplete="off">
         </div>
         <input class="settings-input" id="local-key" type="password" placeholder="API key (optional — for protected local endpoints)" autocomplete="off">
         <div class="endpoint-actions">
           <button class="endpoint-btn ghost" id="local-test-btn" onclick="testEndpoint('local')">Test</button>
           <button class="endpoint-btn solid" id="local-add-btn" onclick="addEndpoint('local')">Add</button>
         </div>
-        <button class="endpoint-quickstart" id="quickstart-row" onclick="toggleQuickstart()">
+        <button class="endpoint-quickstart" id="quickstart-row" type="button" aria-expanded="false" aria-controls="quickstart-body" onclick="toggleQuickstart()">
           <span>Quickstart</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
         </button>
@@ -1145,11 +1145,11 @@ git push</code></div></div>
           <div class="qs-step">
             <span class="qs-num">3</span>
             <div class="qs-text">
-              <strong>Start the server</strong>
-              <span>Leave this running while you chat. <code>OLLAMA_ORIGINS</code> is what lets the browser reach it:</span>
-              <code data-ollama-cmd="start">OLLAMA_ORIGINS=* ollama serve</code>
-              <span>Or run the bundled script from the project folder, which also frees the port first:</span>
+              <strong>Start the server with the bundled script</strong>
+              <span>Run it from the project folder — it frees port 11434 first, then starts Ollama with browser access enabled. Double-clicking the file works too. <em>Leave that terminal open while you chat.</em></span>
               <code data-ollama-cmd="script">./start-ollama.sh</code>
+              <span>Rather type it yourself? Same thing in one line — <code>OLLAMA_ORIGINS</code> is what lets the browser reach it:</span>
+              <code data-ollama-cmd="restart">pkill -f ollama; OLLAMA_ORIGINS=* ollama serve</code>
             </div>
           </div>
 
@@ -1158,10 +1158,10 @@ git push</code></div></div>
             <div class="qs-text">
               <strong>Connect it here</strong>
               <span>Paste this endpoint in the field above, then click <strong>Add</strong>:</span>
-              <code>http://localhost:11434/v1</code>
+              <code>http://127.0.0.1:11434/v1</code>
+              <span>Use the numbers, not <code>localhost</code>: on Windows <code>localhost</code> usually resolves to IPv6 <code>::1</code> first, while Ollama listens on IPv4 only — so <code>localhost</code> gets refused before it ever reaches the server.</span>
             </div>
           </div>
-
           <p class="qs-tip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5.9 1.2 1 1.9h6c.1-.7.4-1.4 1-1.9A7 7 0 0 0 12 2z"/></svg>Tip: bigger models (<code>llama3.1:8b</code>, <code>qwen2.5:7b</code>) are smarter but need more RAM. Start small and scale up.</p>
         </div>
       </div>
@@ -1216,7 +1216,7 @@ git push</code></div></div>
     </div>
     <div class="settings-body">
       <p class="modal-text" style="margin-bottom:10px">One-click downloads pull the model straight through Ollama, so it needs to be installed and running first.</p>
-      <p class="modal-text" style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Already have it? Start it with <code data-ollama-cmd="start">OLLAMA_ORIGINS=* ollama serve</code> so the browser is allowed to reach it, then retry below. Already running but still unreachable? Stop it first with <code data-ollama-cmd="stop">pkill -f ollama</code>.</p>
+      <p class="modal-text" style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Already have it? Run the bundled script from the project folder — <code data-ollama-cmd="script">./start-ollama.sh</code> — it frees the port and starts Ollama with browser access in one go, then retry below. Prefer one line? <code data-ollama-cmd="restart">pkill -f ollama; OLLAMA_ORIGINS=* ollama serve</code>.</p>
       <div id="ollama-check-note" class="rec-cpu-note" style="color:#EF4444" hidden></div>
       <div class="endpoint-actions">
         <button class="endpoint-btn ghost" style="flex:1" onclick="openOllamaDownloadPage()">Get Ollama ↗</button>

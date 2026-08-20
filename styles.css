@@ -2571,6 +2571,10 @@
     color: var(--text-secondary);
     line-height: 1.5;
   }
+  /* The rule above sets display:flex, which beats the UA stylesheet's
+     display:none for [hidden] — without this the panel could never
+     collapse and the Quickstart toggle looked dead. */
+  .quickstart-body[hidden] { display: none; }
   .quickstart-body code {
     background: var(--bg-panel);
     border: 1px solid var(--border);

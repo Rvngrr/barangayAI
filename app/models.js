@@ -543,9 +543,12 @@ function toggleQuickstart() {
   const body = document.getElementById('quickstart-body');
   const row  = document.getElementById('quickstart-row');
   if (!body) return;
-  const open = body.hasAttribute('hidden') ? false : true;
-  if (open) { body.setAttribute('hidden', ''); row.classList.remove('open'); }
-  else      { body.removeAttribute('hidden');  row.classList.add('open'); }
+  const open = !body.hasAttribute('hidden');
+  if (open) body.setAttribute('hidden', ''); else body.removeAttribute('hidden');
+  if (row) {
+    row.classList.toggle('open', !open);
+    row.setAttribute('aria-expanded', String(!open));
+  }
 }
 
 const PROVIDER_ENDPOINTS = {

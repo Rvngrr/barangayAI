@@ -918,9 +918,9 @@ async function sendMessage() {
           title: "Something went wrong",
           desc: "The AI couldn't be reached. Try these fixes one by one.",
           steps: [
-            { text: 'Make sure Ollama is running:', code: OLLAMA_START_CMD },
+            { text: 'Make sure Ollama is running — from the project folder:', code: OLLAMA_SCRIPT_CMD },
             { text: 'Check the model is installed:', code: 'ollama list' },
-            { text: 'Try the API directly in your browser:', code: 'localhost:11434/v1/models' },
+            { text: 'Try the API directly in your browser:', code: '127.0.0.1:11434/v1/models' },
             { text: 'If nothing works, raise your hand — your facilitator can help' }
           ],
           cta: true,

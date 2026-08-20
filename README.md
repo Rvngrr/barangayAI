@@ -247,7 +247,8 @@ Everything stays on your device. Conversations are stored in your browser's Inde
 
 - **The `OLLAMA_ORIGINS=* ollama serve` command does nothing on Windows** — that's bash syntax. In PowerShell use `$env:OLLAMA_ORIGINS="*"; ollama serve`.
 
-- **"Can't connect" / no models found** — make sure Ollama is running and you've pulled a model (`ollama list`). Test the API directly in your browser: `http://localhost:11434/v1/models`.
+- **"Can't connect" / no models found** — make sure Ollama is running and you've pulled a model (`ollama list`). Test the API directly in your browser: `http://127.0.0.1:11434/v1/models`.
+- **Adding a local endpoint fails with `http://localhost:11434/v1`** — use `http://127.0.0.1:11434/v1` instead. On Windows `localhost` resolves to IPv6 `::1` first and Ollama listens on IPv4 only, so the browser is refused before it reaches the server. (Setting `OLLAMA_HOST=0.0.0.0` makes `localhost` work too, but it also exposes Ollama to your whole network — the numeric address is the safer fix.)
 - **Blank page / scripts not loading** — you opened `index.html` via `file://`. Serve it over a local web server instead (see Quick start).
 - **Responses are slow** — small models like `qwen2.5:3b` are chosen for low-end hardware. Larger models are smarter but need more RAM/GPU.
 

@@ -166,15 +166,15 @@ const FAMILY_LOGO = {
 
 function _recRowHtml(m, starred, dim) {
   const star = starred ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="var(--dc-gold)" stroke="var(--dc-gold)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>' : '';
-  const tag = escapeHtml(m.tag);
+  const tag = escHtml(m.tag);
   const logo = FAMILY_LOGO[m.family];
   const downloadBtn = dim ? '' :
     `<button class="rec-copy" data-pull-tag="${tag}" onclick="pullModelOneClick('${tag}')" title="Download and install this model via Ollama">Download</button>`;
   return `<div class="rec-row${dim ? ' dim' : ''}">
     ${logo ? `<img class="rec-logo" src="${logo}" alt="">` : ''}
     <div class="rec-info">
-      <span class="rec-name">${star}${tag} <em>${escapeHtml(m.params)} · needs ~${m.needGB} GB</em></span>
-      <span class="rec-desc">${escapeHtml(m.desc)}</span>
+      <span class="rec-name">${star}${tag} <em>${escHtml(m.params)} · needs ~${m.needGB} GB</em></span>
+      <span class="rec-desc">${escHtml(m.desc)}</span>
     </div>${downloadBtn}
   </div>`;
 }

@@ -24,6 +24,9 @@ function applySettings(s) {
   }
   const name = (_activePersona && _activePersona.name) ? _activePersona.name : (s.ai_name || AI_NAME);
   window._AI_NAME_ACTIVE = name;
+  // One picture for the AI, not one per persona: a persona changes what it says,
+  // not who it is.
+  window._AI_AVATAR_ACTIVE = s.ai_avatar || '';
   document.getElementById('chat-title').textContent = name;
   const wt = document.querySelector('.welcome-title');
   if (wt) wt.textContent = name;
@@ -56,8 +59,7 @@ function applySettings(s) {
   window._FOLLOWUPS_ENABLED = (s.followups_enabled === true);
   syncWebSearchUI();
   syncThinkingUI();
-  const initials = name.slice(0, 2).toUpperCase();
-  document.querySelectorAll('.avatar.ai').forEach(a => a.textContent = initials);
+  refreshAIIdentity();
   if (document.getElementById('welcome-screen')) resetWelcomeScreen();
   renderSourcesPanel();
 }
@@ -78,9 +80,116 @@ function scaleColor(hex, factor) {
   return '#' + [r,g,b].map(x => x.toString(16).padStart(2,'0')).join('');
 }
 
+// Inner markup for one AI avatar. An uploaded picture wins; initials are a
+// first-class fallback, not a placeholder — plenty of participants will never
+// upload one, and nothing should look unfinished if they don't.
 function getAIAvatar() {
+  const pic = _safeAvatarURL(window._AI_AVATAR_ACTIVE);
+  if (pic) return `<img class="avatar-img" src="${escHtml(pic)}" alt="">`;
+  const name = window._AI_NAME_ACTIVE;
+  return name ? name.slice(0, 2).toUpperCase() : AI_AVATAR;
+}
+
+// The only legitimate value here is an inline image. Locally it always is —
+// canvas.toDataURL produced it — but a published my-ai.json is a file from
+// outside this browser, and `src` is not a place to trust one. escHtml leaves
+// quotes alone (fine in element text, not in an attribute), so attribute
+// escaping is applied on top wherever these land in markup.
+function _safeAvatarURL(pic) {
+  return /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(pic || '') ? pic : '';
+}
+
+// Avatar plus the name label above it. `withName` is false for the follow-up
+// answers in a run — see _startsAIRun() in app/chat.js.
+//
+// Long names are cut by CSS (ellipsis), never sliced here. Two reasons: the
+// label is sized in pixels and a character count can't know where that lands
+// (twenty wide characters outrun twenty narrow ones), and slicing a Filipino or
+// emoji name mid-codepoint renders a replacement box. `title` keeps the whole
+// name reachable either way.
+function aiIdentMarkup(withName) {
   const name = window._AI_NAME_ACTIVE || AI_NAME;
-  return name.slice(0, 2).toUpperCase();
+  const label = withName
+    ? `<span class="ai-ident-name" title="${escHtml(name)}">${escHtml(name)}</span>`
+    : '';
+  return `${label}<div class="avatar ai">${getAIAvatar()}</div>`;
+}
+
+// A rename or a new picture has to reach the answers already on screen, not
+// just the next one.
+function refreshAIIdentity() {
+  const name = window._AI_NAME_ACTIVE || AI_NAME;
+  document.querySelectorAll('.avatar.ai').forEach(a => { a.innerHTML = getAIAvatar(); });
+  document.querySelectorAll('.ai-ident-name').forEach(el => {
+    el.textContent = name;
+    el.title = name;
+  });
+}
+
+// ── PROFILE PICTURE ───────────────────────────────────────────────────
+// Whatever the participant picks is re-encoded to a 128×128 WebP and the
+// original is thrown away. That isn't cosmetic. Settings live inside the SQLite
+// file, and db.js exports and rewrites that whole file on every mutation — so a
+// 3 MB phone photo parked in here would cost 3 MB of write per message sent.
+// 128px of WebP is ~5 KB, about one message of text. The avatar renders at 28px
+// in chat and 48px in Settings, so 128 still covers a 3× display with room over.
+const AVATAR_PX         = 128;
+const AVATAR_MAX_INPUT  = 8 * 1024 * 1024;   // refuse to even decode past this
+const AVATAR_MAX_STORED = 24 * 1024;         // encoded ceiling, after downscaling
+
+function _avatarDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      // Centre-crop to a square before scaling, so a portrait photo keeps its
+      // subject instead of being squashed into the circle.
+      const side = Math.min(img.naturalWidth, img.naturalHeight);
+      if (!side) { reject(new Error('empty image')); return; }
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = AVATAR_PX;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img,
+        (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side,
+        0, 0, AVATAR_PX, AVATAR_PX);
+      // Base64 inflates by 4/3, hence the budget conversion. Ordered by
+      // preference, and the smallest is kept if none come in under — always
+      // resolving with something beats rejecting a picture the participant
+      // deliberately chose. toDataURL hands back a PNG for a type the browser
+      // can't encode, so this only ever over-estimates.
+      const tries = [['image/webp', 0.85], ['image/webp', 0.7], ['image/jpeg', 0.8]];
+      let best = '';
+      for (const [type, q] of tries) {
+        const out = canvas.toDataURL(type, q);
+        if (!best || out.length < best.length) best = out;
+        if (out.length <= AVATAR_MAX_STORED * 1.34) { best = out; break; }
+      }
+      resolve(best);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not read image')); };
+    img.src = url;
+  });
+}
+
+async function handleAvatarPick(input) {
+  const file = input.files && input.files[0];
+  input.value = '';   // so picking the same file twice still fires onchange
+  if (!file) return;
+  if (!/^image\//.test(file.type)) { showToast('Pick an image file.'); return; }
+  if (file.size > AVATAR_MAX_INPUT) { showToast('Image too large — pick one under 8 MB.'); return; }
+  try {
+    window._AVATAR_DRAFT = await _avatarDataURL(file);
+    updateSettingsPreview();
+  } catch (e) {
+    showToast('Could not read that image — try a PNG or JPG.');
+  }
+}
+
+function removeAIAvatar() {
+  window._AVATAR_DRAFT = '';
+  updateSettingsPreview();
 }
 
 function setTonePreset(key, el) {
@@ -107,12 +216,25 @@ function updateSettingsPreview() {
   const prevAvatar  = document.getElementById('preview-avatar');
   const prevName    = document.getElementById('preview-name');
   const prevGreeting = document.getElementById('preview-greeting');
+  const pic      = _safeAvatarURL(window._AVATAR_DRAFT);
+  const initials = name.slice(0, 2).toUpperCase();
+  const face     = pic ? `<img class="avatar-img" src="${escHtml(pic)}" alt="">` : escHtml(initials);
   if (prevAvatar) {
-    prevAvatar.textContent = name.slice(0, 2).toUpperCase();
+    prevAvatar.innerHTML = face;
     prevAvatar.style.background = `linear-gradient(135deg, ${brand} 0%, ${brand}bb 100%)`;
   }
   if (prevName)    prevName.textContent    = name;
   if (prevGreeting) prevGreeting.textContent = greeting;
+
+  // The picture control carries its own copy of the face — the preview card at
+  // the top of the pane is usually scrolled out of view by the time you reach it.
+  const avaPrev = document.getElementById('settings-avatar-preview');
+  if (avaPrev) {
+    avaPrev.innerHTML = face;
+    avaPrev.style.background = `linear-gradient(135deg, ${brand} 0%, ${brand}bb 100%)`;
+  }
+  const avaRemove = document.getElementById('settings-avatar-remove');
+  if (avaRemove) avaRemove.style.display = pic ? '' : 'none';
 }
 
 // Far-right position of the Max Tokens slider means "No limit"
@@ -142,6 +264,7 @@ function openSettings() {
   // The "Default (no persona)" entry edits these base values:
   window._BASE_NAME_DRAFT = s.ai_name || AI_NAME;
   window._BASE_TONE_DRAFT = s.ai_tone || AI_TONE || '';
+  window._AVATAR_DRAFT    = s.ai_avatar || '';
   brandInput.value     = s.brand_color      || BRAND_COLOR;
   greetInput.value     = s.welcome_greeting || '';
   if (knowledgeInput) knowledgeInput.value = s.ai_knowledge || '';
@@ -235,6 +358,7 @@ function setSwatchColor(type, val, el) {
 function resetSettingsForm() {
   window._BASE_NAME_DRAFT = AI_NAME;
   window._BASE_TONE_DRAFT = AI_TONE || '';
+  window._AVATAR_DRAFT    = '';
   document.getElementById('settings-brand-color').value = BRAND_COLOR;
   document.getElementById('settings-greeting').value = '';
   const ki = document.getElementById('settings-ai-knowledge');
@@ -279,6 +403,7 @@ function applyAndSaveSettings() {
   const s = {
     // Base name/tone come from the drafts (the fields may currently be showing a persona)
     ai_name:          ((window._BASE_NAME_DRAFT || '').trim() || AI_NAME),
+    ai_avatar:        (window._AVATAR_DRAFT || ''),
     brand_color:      document.getElementById('settings-brand-color').value,
     ai_tone:          (window._BASE_TONE_DRAFT || '').trim(),
     welcome_greeting: document.getElementById('settings-greeting').value.trim(),

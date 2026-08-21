@@ -72,6 +72,10 @@ function hydratePublishedSettings(cfg) {
     chunks: window.BarangayRAG ? window.BarangayRAG.chunkText(f.content || '') : [],
     addedAt: f.addedAt || Date.now(),
   }));
+  // maxlength="40" guards the Settings field, but nothing guards a hand-edited
+  // my-ai.json — and a 500-char name would run clean off the chat label. CSS
+  // truncates it visually; this stops it being carried around at full length.
+  if (typeof s.ai_name === 'string') s.ai_name = s.ai_name.slice(0, 60);
   // A visitor must never inherit the owner's keys or spend their quota.
   delete s.tavily_api_key;
   s.web_search_enabled = false;
@@ -168,6 +172,8 @@ function buildPublishConfig() {
     creator_name: (s.creator_name || '').trim(),
     settings: {
       ai_name:          s.ai_name || AI_NAME,
+      // ~5 KB against a file that already tolerates 8 MB of sources.
+      ai_avatar:        s.ai_avatar || '',
       ai_tone:          s.ai_tone || '',
       ai_knowledge:     s.ai_knowledge || '',
       brand_color:      s.brand_color || BRAND_COLOR,
@@ -228,6 +234,7 @@ function updatePublishSummary() {
   const cfg = buildPublishConfig();
   const rows = [
     ['Name', cfg.settings.ai_name],
+    ['Picture', cfg.settings.ai_avatar ? 'included — visible to everyone' : 'initials only'],
     ['Language', cfg.settings.reply_language],
     ['Personality', cfg.settings.ai_tone ? 'custom prompt' : 'default'],
     ['Sources', cfg.sources.length ? `${cfg.sources.length} file${cfg.sources.length === 1 ? '' : 's'}` : 'none'],

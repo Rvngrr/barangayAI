@@ -131,7 +131,7 @@ function renderTrainingFilesList() {
     row.className = 'training-file-item';
     row.innerHTML = `
       <span style="display:flex;color:var(--text-muted)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span>
-      <span class="tf-name" title="${escapeAttr(f.name)}">${escapeHtml(f.name)}</span>
+      <span class="tf-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span>
       <span class="tf-size">${formatBytes(f.size)}</span>
       <button class="tf-remove" title="Remove" aria-label="Remove">✕</button>
     `;
@@ -147,8 +147,6 @@ function formatBytes(n) {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(2)} MB`;
 }
-function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function escapeAttr(s) { return escapeHtml(s); }
 
 // ── SOURCES PANEL (sidebar) — same store as Settings → Training ───────
 // window._TRAINING_FILES_MASTER holds every saved source; _KB_DISABLED is

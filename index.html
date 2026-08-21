@@ -1289,6 +1289,22 @@ git push</code></div></div>
 
       <hr class="settings-divider">
 
+      <!-- Profile picture -->
+      <div class="settings-field">
+        <label class="settings-label">Profile Picture</label>
+        <div class="settings-avatar-row">
+          <div class="settings-avatar-preview" id="settings-avatar-preview">BA</div>
+          <div class="settings-avatar-btns">
+            <button type="button" class="persona-new-btn" onclick="document.getElementById('settings-avatar-input').click()">Upload</button>
+            <button type="button" class="persona-new-btn" id="settings-avatar-remove" onclick="removeAIAvatar()" style="display:none">Remove</button>
+          </div>
+        </div>
+        <input id="settings-avatar-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="handleAvatarPick(this)">
+        <span class="settings-hint">Shown beside every reply &mdash; and included when you publish.</span>
+      </div>
+
+      <hr class="settings-divider">
+
       <!-- Name (per persona) -->
       <div class="settings-field">
         <label class="settings-label" for="settings-ai-name">Your Barangay Name</label>

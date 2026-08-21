@@ -101,10 +101,6 @@ function renderSessionMessages(session) {
   const main = document.querySelector('.main');
   if (main) main.classList.remove('welcome-mode');
 
-  const avatarLabel = window._AI_NAME_ACTIVE
-    ? window._AI_NAME_ACTIVE.slice(0, 2).toUpperCase()
-    : AI_AVATAR;
-
   // Follow-ups only belong under the newest answer — re-showing them mid-thread
   // would offer to ask questions the conversation has already moved past.
   let lastAssistantIdx = -1;
@@ -122,10 +118,14 @@ function renderSessionMessages(session) {
       chatArea.appendChild(t);
     } else if (msg.role === 'assistant') {
       const row = document.createElement('div');
-      row.className = 'message-row';
+      // Same rule as a live turn: the name label rides the first answer of a
+      // run. Here the run is read off the stored messages rather than the DOM.
+      const prev = session.displayMessages[idx - 1];
+      const withName = !prev || prev.role !== 'assistant';
+      row.className = 'message-row' + (withName ? ' has-ident' : '');
       const wasCancelled = isCancelledContent(msg.content);
       const bodyText = wasCancelled ? stripCancelMark(msg.content) : msg.content;
-      row.innerHTML = `<div class="avatar ai">${avatarLabel}</div><div class="bubble ai"><div class="msg-body">${formatContent(bodyText)}</div></div>`;
+      row.innerHTML = `${aiIdentMarkup(withName)}<div class="bubble ai"><div class="msg-body">${formatContent(bodyText)}</div></div>`;
       const bubble = row.querySelector('.bubble');
       // The trace is part of the answer, not decoration around it — reopening a
       // conversation shows the same record of work the student watched live.

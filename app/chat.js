@@ -748,11 +748,12 @@ function getTime() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// Safe in element text AND in attribute values — hence the quotes. Without them
+// a name containing `"` breaks out of `title="..."`. Escaping quotes in text
+// costs nothing: the parser decodes the entity back on the way in.
 function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return String(str).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 // ── COPY CODE BLOCK ───────────────────────────────────────────────────
@@ -1194,14 +1195,29 @@ function attachTrace(bubble, data) {
 
 const _thinkingPhrases = ['Thinking', 'Reading your message', 'Generating response', 'Putting it together'];
 
+// Whether the row about to be appended opens a new run of AI answers. The name
+// label goes on the first answer of a run only — repeated down a streak of
+// replies it stops being clarity and becomes noise. #typing-row is skipped
+// because it is the placeholder for the very message being appended, not a
+// previous answer.
+function _startsAIRun() {
+  const rows = document.querySelectorAll('#chat-area .message-row');
+  for (let i = rows.length - 1; i >= 0; i--) {
+    if (rows[i].id === 'typing-row') continue;
+    return rows[i].classList.contains('user');
+  }
+  return true;   // first thing in the conversation
+}
+
 function appendTypingIndicator() {
   startTrace();
   const chatArea = document.getElementById('chat-area');
   const row = document.createElement('div');
-  row.className = 'message-row';
+  const withName = _startsAIRun();
+  row.className = 'message-row' + (withName ? ' has-ident' : '');
   row.id = 'typing-row';
   row.innerHTML = `
-    <div class="avatar ai">${getAIAvatar()}</div>
+    ${aiIdentMarkup(withName)}
     <div class="bubble ai thinking-bubble">
       <div class="thinking-top-row" onclick="toggleThinkingCollapse(this)" role="button" tabindex="0" aria-expanded="true">
         <span class="thinking-sparkle"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg></span>
@@ -1475,9 +1491,10 @@ document.addEventListener('click', () => {
 function appendAIMessage(text, trace) {
   const chatArea = document.getElementById('chat-area');
   const row = document.createElement('div');
-  row.className = 'message-row';
+  const withName = _startsAIRun();
+  row.className = 'message-row' + (withName ? ' has-ident' : '');
   row.innerHTML = `
-    <div class="avatar ai">${getAIAvatar()}</div>
+    ${aiIdentMarkup(withName)}
     <div class="bubble ai"><div class="msg-body">${formatContent(text)}</div></div>`;
   if (trace) attachTrace(row.querySelector('.bubble'), trace);
   chatArea.appendChild(row);

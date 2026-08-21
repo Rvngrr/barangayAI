@@ -429,16 +429,16 @@ async function sendMessage() {
 
     const chatArea = document.getElementById('chat-area');
     const row = document.createElement('div');
-    row.className = 'message-row';
-    const avatarDiv = document.createElement('div');
-    avatarDiv.className = 'avatar ai';
-    avatarDiv.textContent = getAIAvatar();
+    // Read before the row is appended, while #typing-row is still the last thing
+    // in the chat — _startsAIRun() skips it for exactly this case.
+    const withName = _startsAIRun();
+    row.className = 'message-row' + (withName ? ' has-ident' : '');
+    row.innerHTML = aiIdentMarkup(withName);
     const bubble = document.createElement('div');
     bubble.className = 'bubble ai';
     const msgBody = document.createElement('div');
     msgBody.className = 'msg-body';
     bubble.appendChild(msgBody);
-    row.appendChild(avatarDiv);
     row.appendChild(bubble);
 
     // Headers arriving doesn't mean the model has produced anything yet — for a big
@@ -678,8 +678,9 @@ async function sendMessage() {
     if (_aborted) {
       const ca = document.getElementById('chat-area');
       const row = document.createElement('div');
-      row.className = 'message-row';
-      row.innerHTML = `<div class="avatar ai">${getAIAvatar()}</div><div class="bubble ai"></div>`;
+      const withName = _startsAIRun();
+      row.className = 'message-row' + (withName ? ' has-ident' : '');
+      row.innerHTML = `${aiIdentMarkup(withName)}<div class="bubble ai"></div>`;
       const cancelBubble = row.querySelector('.bubble');
       attachTrace(cancelBubble, failTrace);
       cancelBubble.appendChild(cancelledNoteEl());

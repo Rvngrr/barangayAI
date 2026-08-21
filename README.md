@@ -48,7 +48,7 @@ Opening the Ollama app is **not enough**. Browsers refuse to talk to a local ser
 ./start-ollama.sh      # macOS / Linux  (chmod +x start-ollama.sh once)
 ```
 
-It frees port 11434 if something is stuck on it, then starts the server with browser access enabled. Leave that terminal open. (Double-clicking the file in Explorer/Finder does the same thing.)
+It checks whether Ollama is already running and browser-reachable and, if it is, stops there rather than restarting a healthy server for nothing. Otherwise it frees port 11434 and starts the server with browser access enabled. Leave that terminal open. (Double-clicking the file in Explorer/Finder does the same thing.)
 
 **Or type it yourself** — one line, stops anything stale and starts clean:
 
@@ -151,6 +151,16 @@ The key is **yours** — you create it on your own provider account, and every m
 **What visitors get:** your AI's name, personality, reply language, brand color, greeting, and uploaded sources — plus their own private chat history in their own browser. **What they can't do:** open Settings, change the personality or language, add or remove sources, or change what the AI *is*. They **can** switch models, from the picker under the composer — by default the picker offers every chat model your key can reach. Set `MODEL_NAME` to restrict that to one model (or a comma-separated few) and the picker offers only those. Either way the deployed `/api` asks your provider for the live list at request time rather than trusting a name baked into the code, so a model your provider retires drops out of the picker instead of taking the site down.
 
 To see exactly what they'll see, open your local copy at `?visitor=1` once `my-ai.json` is in the folder.
+
+That covers the *page*, not the *server*. [`api/proxy.js`](api/proxy.js) is a Vercel function, and a plain `python -m http.server` never runs it — so nothing behind `/api` (the key, the request caps, the live model list) is exercised on localhost. To test the hosted path before you deploy:
+
+```bash
+npx vercel link          # once — connects this folder to your Vercel project
+npx vercel env pull      # writes MODEL_API_KEY into .env.local (git-ignored)
+npx vercel dev           # serves the app AND runs api/proxy.js
+```
+
+Worth the trouble because the two paths don't behave the same: a local Ollama ignores request fields it doesn't recognize, while a cloud provider rejects them with a `400`. "Works against Ollama" is not evidence the published copy works. If you skip this, at least open the Vercel **preview deployment** and send one message before merging.
 
 > The published copy answers using a **hosted** model, so it is not the private, offline AI — and it says so on the page. The copy on your own machine is still the free, local, no-cloud one. Anyone with the link spends your key's quota. On a free tier that just means your demo goes quiet until the allowance resets — which is why you should start there rather than on a paid key.
 

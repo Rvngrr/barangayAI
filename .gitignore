@@ -6,6 +6,7 @@ yarn.lock
 # Environment / secrets
 .env
 .env.*
+.vercel/
 *.key
 
 # Editor / OS cruft

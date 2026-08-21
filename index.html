@@ -165,7 +165,9 @@
             <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
           </svg>
         </div>
-        <div class="sidebar-wifi-ssid">Ollama · Qwen</div>
+        <!-- Rewritten by renderConnIdentity() to the live server · family;
+             the default here is what a first run shows. -->
+        <div class="sidebar-wifi-ssid" id="sidebar-wifi-ssid">Ollama · Qwen</div>
       </div>
       <div class="sidebar-wifi-status checking" id="sidebar-wifi-status">
         <div class="swifi-dot"></div>
@@ -1289,18 +1291,25 @@ git push</code></div></div>
 
       <hr class="settings-divider">
 
-      <!-- Profile picture -->
+      <!-- Profile picture. The face itself is the upload target — a camera
+           badge says so — with the buttons beside it as the explicit path. -->
       <div class="settings-field">
         <label class="settings-label">Profile Picture</label>
         <div class="settings-avatar-row">
-          <div class="settings-avatar-preview" id="settings-avatar-preview">BA</div>
-          <div class="settings-avatar-btns">
-            <button type="button" class="persona-new-btn" onclick="document.getElementById('settings-avatar-input').click()">Upload</button>
-            <button type="button" class="persona-new-btn" id="settings-avatar-remove" onclick="removeAIAvatar()" style="display:none">Remove</button>
+          <button type="button" class="avatar-drop" aria-label="Upload profile picture"
+                  onclick="document.getElementById('settings-avatar-input').click()">
+            <span class="settings-avatar-preview" id="settings-avatar-preview">BA</span>
+            <span class="avatar-drop-badge" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
+          </button>
+          <div class="settings-avatar-text">
+            <div class="settings-avatar-btns">
+              <button type="button" class="persona-new-btn" onclick="document.getElementById('settings-avatar-input').click()">Upload</button>
+              <button type="button" class="avatar-remove-btn" id="settings-avatar-remove" onclick="removeAIAvatar()" style="display:none">Remove</button>
+            </div>
+            <span class="settings-hint">Shown beside every reply, and when you publish.</span>
           </div>
         </div>
         <input id="settings-avatar-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="handleAvatarPick(this)">
-        <span class="settings-hint">Shown beside every reply &mdash; and included when you publish.</span>
       </div>
 
       <hr class="settings-divider">
@@ -1462,31 +1471,13 @@ git push</code></div></div>
 
       <hr class="settings-divider">
 
-      <!-- Prefix -->
-      <div class="settings-field">
-        <label class="settings-label" for="settings-prompt-prefix">Prefix</label>
-        <textarea class="settings-input settings-textarea" id="settings-prompt-prefix" placeholder="Added before every message you send…" style="min-height:60px;"></textarea>
-        <span class="settings-hint">Silently prepended to each message before it reaches the model — handy for standing instructions like “Answer in bullet points.”</span>
-      </div>
-
-      <hr class="settings-divider">
-
-      <!-- Suffix -->
-      <div class="settings-field">
-        <label class="settings-label" for="settings-prompt-suffix">Suffix</label>
-        <textarea class="settings-input settings-textarea" id="settings-prompt-suffix" placeholder="Added after every message you send…" style="min-height:60px;"></textarea>
-        <span class="settings-hint">Silently appended to each message before it reaches the model — e.g. “Keep it under 100 words.”</span>
-      </div>
-
-      <hr class="settings-divider">
-
       <!-- Temperature -->
       <div class="settings-field">
         <div class="slider-head">
           <label class="settings-label" for="settings-temperature">Temperature</label>
-          <span class="slider-value" id="settings-temperature-value">0.3</span>
+          <span class="slider-value" id="settings-temperature-value">1.0</span>
         </div>
-        <input class="settings-slider" id="settings-temperature" type="range" min="0" max="2" step="0.1" value="0.3" oninput="updateTemperatureLabel(this.value)">
+        <input class="settings-slider" id="settings-temperature" type="range" min="0" max="2" step="0.1" value="1" oninput="updateTemperatureLabel(this.value)">
         <div class="slider-scale">
           <span>Precise / Code</span>
           <span>Balanced</span>
@@ -1501,14 +1492,14 @@ git push</code></div></div>
       <div class="settings-field">
         <div class="slider-head">
           <label class="settings-label" for="settings-max-tokens">Max Tokens</label>
-          <span class="slider-value" id="settings-max-tokens-value">1024</span>
+          <span class="slider-value" id="settings-max-tokens-value">No limit</span>
         </div>
-        <input class="settings-slider" id="settings-max-tokens" type="range" min="128" max="4224" step="128" value="1024" oninput="updateMaxTokensLabel(this.value)">
+        <input class="settings-slider" id="settings-max-tokens" type="range" min="128" max="4224" step="128" value="4224" oninput="updateMaxTokensLabel(this.value)">
         <div class="slider-scale">
           <span>Short</span>
           <span>No limit</span>
         </div>
-        <span class="settings-hint">Caps how long each reply can be. Slide to the far right for no limit (model default).</span>
+        <span class="settings-hint">Caps how long each reply can be. Starts at no limit — slide left to cut replies short.</span>
       </div>
 
     </div>

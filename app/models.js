@@ -59,6 +59,69 @@ const MODEL_LOGOS = [
 ];
 const DEFAULT_MODEL_LOGO = { src: 'assets/logos/ollama_logo.png', alt: 'Ollama' };
 
+// A model tag is a filename, not a name: "qwen2.5:3b", "llama3.2:1b-instruct-q4",
+// "deepseek-chat", "meta-llama/Llama-3.1-8B". The sidebar card has room for the
+// family and nothing else, so this returns the part a person would say out loud.
+// Order matters — the narrower name has to be tested before the one it contains
+// (codellama before llama, mixtral before mistral), or every Code Llama in the
+// picker reports itself as plain Llama.
+const MODEL_FAMILIES = [
+  [/qwq/i,          'QwQ'],
+  [/qwen/i,         'Qwen'],
+  [/codellama/i,    'Code Llama'],
+  [/tinyllama/i,    'TinyLlama'],
+  [/llama/i,        'Llama'],
+  [/gemma/i,        'Gemma'],
+  [/granite/i,      'Granite'],
+  [/deepseek/i,     'DeepSeek'],
+  [/mixtral/i,      'Mixtral'],
+  [/mistral/i,      'Mistral'],
+  [/phi/i,          'Phi'],
+  [/gpt|^o[1-9]/i, 'GPT'],
+  [/claude/i,       'Claude'],
+  [/gemini/i,       'Gemini'],
+  [/command-?r/i,   'Command R'],
+  [/glm/i,          'GLM'],
+  [/kimi/i,         'Kimi'],
+];
+
+// Unrecognised tags still get a readable family rather than the raw filename:
+// the first word, minus the version digits and the quantisation tail.
+//   "olmo2:13b"        → Olmo
+//   "nomic-embed-text" → Nomic
+//   "custom-model"     → Custom
+function modelFamilyLabel(tag) {
+  const t = String(tag || '');
+  const hit = MODEL_FAMILIES.find(([re]) => re.test(t));
+  if (hit) return hit[1];
+  const word = t.split(/[:/]/)[0].split(/[-_.]/)[0].replace(/\d.*$/, '');
+  return word ? word[0].toUpperCase() + word.slice(1) : 'Model';
+}
+
+// Who is serving the model. Ollama answers for itself (see probeOllama below);
+// the known clouds are named from their host, and anything else keeps its host,
+// which is the truest label available for someone's own box on the LAN.
+const PROVIDER_HOSTS = [
+  [/(^|\.)deepseek\.com$/i,     'DeepSeek'],
+  [/(^|\.)openai\.com$/i,       'OpenAI'],
+  [/(^|\.)groq\.com$/i,         'Groq'],
+  [/(^|\.)together\.(xyz|ai)$/i,'Together'],
+  [/(^|\.)mistral\.ai$/i,       'Mistral'],
+  [/(^|\.)anthropic\.com$/i,    'Anthropic'],
+  [/(^|\.)googleapis\.com$/i,   'Google'],
+  [/(^|\.)openrouter\.ai$/i,    'OpenRouter'],
+];
+function endpointServerLabel(base, kind) {
+  if (isOllamaEndpoint(base, kind)) return 'Ollama';
+  let host = '';
+  try { host = new URL(base).hostname.replace(/^www\./, ''); } catch {}
+  // The published build talks to its own relative '/api' proxy, which has no
+  // host to name — and from the visitor's side "Cloud" is the honest answer.
+  if (!host) return (kind || 'local') === 'api' ? 'Cloud' : 'Local';
+  const hit = PROVIDER_HOSTS.find(([re]) => re.test(host));
+  return hit ? hit[1] : host;
+}
+
 // Icon markup for a model row/button: a real vendor logo when we recognize the
 // family, otherwise the default Ollama mark — both sized to `size` px.
 function modelIconHtml(modelName, size) {
@@ -323,6 +386,7 @@ function deselectModel() {
   if (labelElMobile) labelElMobile.textContent = 'Select model';
   const iconElMobile = document.getElementById('model-select-icon-mobile');
   if (iconElMobile) iconElMobile.innerHTML = modelIcon.replace(/width="16" height="16"/, 'width="15" height="15"');
+  renderConnIdentity();
 }
 
 // ── ENDPOINT MANAGER (Added Models) ───────────────────────────────────
@@ -563,13 +627,49 @@ function onProviderChange(provider) {
   if (input && provider in PROVIDER_ENDPOINTS) input.value = PROVIDER_ENDPOINTS[provider];
 }
 
-// Normalise a base URL (ensure it ends without trailing slash, has /v1 for cloud is user's job)
+// Normalise a base URL: trim it, drop trailing slashes, and supply the /v1 that
+// the OpenAI-compatible API lives under when it's missing.
+//
+// Every request this app makes is `${base}/models`, `${base}/chat/completions`.
+// So a base of http://127.0.0.1:11434 asks for /models, Ollama answers 404, and
+// the only thing the person sees is "Could not reach endpoint" — about a URL
+// that opens perfectly well in their browser. Nothing on screen tells them the
+// version segment is load-bearing, so it gets supplied rather than demanded.
+//
+// Three cases are left exactly as typed:
+//   • a path that already carries a version segment — /v1, /v1beta,
+//     /openai/v1, and Gemini's /v1beta/openai all count
+//   • a path ending in /api. That is a valid OpenAI-compatible base in its own
+//     right (Open WebUI answers /api/models and /api/chat/completions) and it's
+//     also where Ollama's native API lives, so appending here would invent a
+//     404 instead of preventing one
+//   • anything that isn't an absolute http(s) URL — the published build's
+//     relative '/api' proxy, or a half-typed host with no scheme, where
+//     guessing the tail isn't ours to do
 function normaliseBase(url) {
-  return (url || '').trim().replace(/\/+$/, '');
+  const base = (url || '').trim().replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(base)) return base;
+  let path;
+  try { path = new URL(base).pathname; } catch { return base; }
+  if (/\/v\d+[a-z]*(\/|$)/i.test(path)) return base;
+  if (/\/api$/i.test(path)) return base;
+  return base + '/v1';
+}
+
+// Read one of the two endpoint boxes, normalising in place. The corrected URL
+// goes back into the field on purpose: the endpoint that gets tested, added and
+// saved is then the one the person can see, and the /v1 they omitted is visible
+// the next time they type one in.
+function readEndpointInput(kind) {
+  const input = document.getElementById(kind + '-endpoint');
+  if (!input) return '';
+  const base = normaliseBase(input.value);
+  if (base && base !== input.value) input.value = base;
+  return base;
 }
 
 async function testEndpoint(kind) {
-  const base = normaliseBase(document.getElementById(kind + '-endpoint').value);
+  const base = readEndpointInput(kind);
   const key  = (document.getElementById(kind + '-key')?.value || '').trim() || (kind === 'local' ? API_KEY : '');
   if (!base) { showToast('Enter an endpoint URL first'); return; }
   const btn = document.getElementById(kind + '-test-btn');
@@ -705,7 +805,7 @@ async function initModelRegistry() {
 }
 
 async function addEndpoint(kind) {
-  const base = normaliseBase(document.getElementById(kind + '-endpoint').value);
+  const base = readEndpointInput(kind);
   const key  = (document.getElementById(kind + '-key')?.value || '').trim() || (kind === 'local' ? API_KEY : '');
   if (!base) { showToast('Enter an endpoint URL first'); return; }
 
@@ -801,6 +901,38 @@ function setConnected(ok) {
   renderConnState(ok ? 'online' : 'offline');
 }
 
+// The sidebar card's top line, styled like a Wi-Fi SSID: who's serving, and
+// which family. It used to be the literal string "Ollama · Qwen" in the markup,
+// which stayed put after someone added DeepSeek and switched to it — the one
+// place in the app still insisting on a model that wasn't running.
+//
+// Kept to server + family on purpose: the header chip and the composer button
+// already carry the exact tag, and the full "qwen2.5:3b" doesn't fit a 40px-tall
+// card at 12px mono. The tag and its endpoint go in the tooltip instead.
+//
+// With nothing selected yet it reads "Ollama · Qwen" — the local default this
+// app is built around, and what a first-run sidebar should promise.
+const SSID_DEFAULT = 'Ollama · Qwen';
+
+function renderConnIdentity() {
+  const el = document.getElementById('sidebar-wifi-ssid');
+  if (!el) return;
+  const model = window.ACTIVE_MODEL;
+  if (!model) {
+    el.textContent = SSID_DEFAULT;
+    el.title = 'No model selected yet';
+    return;
+  }
+  const base   = window.ACTIVE_BASE || API_BASE;
+  const kind   = window.ACTIVE_KIND || 'local';
+  const server = endpointServerLabel(base, kind);
+  const family = modelFamilyLabel(model);
+  // DeepSeek's model on DeepSeek's own host would otherwise read
+  // "DeepSeek · DeepSeek", which says nothing twice.
+  el.textContent = server.toLowerCase() === family.toLowerCase() ? server : `${server} · ${family}`;
+  el.title = `${model} · ${base}`;
+}
+
 // Three states, not two: 'checking' | 'online' | 'offline'. "Not yet verified"
 // and "verified dead" look nothing alike to a student staring at the header.
 function renderConnState(state) {
@@ -821,6 +953,7 @@ function renderConnState(state) {
   }
   if (text) text.textContent = checking ? `Checking ${label}…` : (ok ? label : 'Offline');
 
+  renderConnIdentity();
   const card = document.getElementById('sidebar-wifi');
   const status = document.getElementById('sidebar-wifi-status');
   const statusText = document.getElementById('sidebar-wifi-text');

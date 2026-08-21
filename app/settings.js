@@ -36,11 +36,9 @@ function applySettings(s) {
     window._AI_TONE_ACTIVE = s.ai_tone;
   }
   if (s.ai_knowledge !== undefined) window._AI_KNOWLEDGE_ACTIVE = s.ai_knowledge;
-  window._PROMPT_PREFIX_ACTIVE = s.prompt_prefix || '';
-  window._PROMPT_SUFFIX_ACTIVE = s.prompt_suffix || '';
-  window._TEMPERATURE_ACTIVE   = (typeof s.temperature === 'number') ? s.temperature : 0.3;
-  // max_tokens: null means "No limit"
-  window._MAX_TOKENS_ACTIVE    = (s.max_tokens === null || typeof s.max_tokens === 'number') ? s.max_tokens : 1024;
+  window._TEMPERATURE_ACTIVE   = (typeof s.temperature === 'number') ? s.temperature : DEFAULT_TEMPERATURE;
+  // max_tokens: null means "No limit" — and that is the default
+  window._MAX_TOKENS_ACTIVE    = (s.max_tokens === null || typeof s.max_tokens === 'number') ? s.max_tokens : DEFAULT_MAX_TOKENS;
   window._TRAINING_FILES_MASTER = Array.isArray(s.training_files) ? s.training_files : [];
   window._TRAINING_FILES_ACTIVE = window._TRAINING_FILES_MASTER.filter(f => !_KB_DISABLED.has(f.name));
   window._TRAINING_NOTES_ACTIVE = s.training_notes || '';
@@ -240,6 +238,13 @@ function updateSettingsPreview() {
 // Far-right position of the Max Tokens slider means "No limit"
 const MAX_TOKENS_SLIDER_MAX = 4224;
 
+// Out-of-the-box model settings: the middle of the temperature scale
+// ("Balanced") and no cap on reply length. Anyone who wants a shorter or
+// sharper answer can move the sliders; nobody should have to move one to stop
+// a reply being cut off mid-sentence.
+const DEFAULT_TEMPERATURE = 1.0;
+const DEFAULT_MAX_TOKENS  = null;   // null = No limit
+
 function updateTemperatureLabel(val) {
   const el = document.getElementById('settings-temperature-value');
   if (el) el.textContent = Number(val).toFixed(1);
@@ -271,22 +276,17 @@ function openSettings() {
   const creatorInput = document.getElementById('settings-creator-name');
   if (creatorInput) creatorInput.value = s.creator_name || '';
 
-  // Model controls (prefix / suffix / temperature / max tokens)
-  const prefixInput = document.getElementById('settings-prompt-prefix');
-  const suffixInput = document.getElementById('settings-prompt-suffix');
+  // Model controls (temperature / max tokens)
   const tempInput   = document.getElementById('settings-temperature');
   const maxTokInput = document.getElementById('settings-max-tokens');
-  if (prefixInput) prefixInput.value = s.prompt_prefix || '';
-  if (suffixInput) suffixInput.value = s.prompt_suffix || '';
   if (tempInput) {
-    const t = (typeof s.temperature === 'number') ? s.temperature : 0.3;
+    const t = (typeof s.temperature === 'number') ? s.temperature : DEFAULT_TEMPERATURE;
     tempInput.value = t;
     updateTemperatureLabel(t);
   }
   if (maxTokInput) {
     // null = no limit → park the slider at its far-right position
-    const mt = (s.max_tokens === null) ? MAX_TOKENS_SLIDER_MAX
-             : (typeof s.max_tokens === 'number' ? s.max_tokens : 1024);
+    const mt = (typeof s.max_tokens === 'number') ? s.max_tokens : MAX_TOKENS_SLIDER_MAX;
     maxTokInput.value = mt;
     updateMaxTokensLabel(maxTokInput.value);
   }
@@ -367,14 +367,10 @@ function resetSettingsForm() {
   if (ci) ci.value = '';
   const tn = document.getElementById('settings-training-notes');
   if (tn) tn.value = '';
-  const pf = document.getElementById('settings-prompt-prefix');
-  if (pf) pf.value = '';
-  const sf = document.getElementById('settings-prompt-suffix');
-  if (sf) sf.value = '';
   const tp = document.getElementById('settings-temperature');
-  if (tp) { tp.value = 0.3; updateTemperatureLabel(0.3); }
+  if (tp) { tp.value = DEFAULT_TEMPERATURE; updateTemperatureLabel(DEFAULT_TEMPERATURE); }
   const mt = document.getElementById('settings-max-tokens');
-  if (mt) { mt.value = 1024; updateMaxTokensLabel(1024); }
+  if (mt) { mt.value = MAX_TOKENS_SLIDER_MAX; updateMaxTokensLabel(MAX_TOKENS_SLIDER_MAX); }
   const wsToggle = document.getElementById('settings-web-search');
   if (wsToggle) wsToggle.classList.remove('on');
   const wsKey = document.getElementById('settings-tavily-key');
@@ -412,11 +408,9 @@ function applyAndSaveSettings() {
     training_files:   (window._TRAINING_FILES_DRAFT || []),
     training_notes:   (document.getElementById('settings-training-notes')?.value.trim() || ''),
     reply_language:   (document.querySelector('#lang-picker .lang-chip.active')?.dataset.lang || 'english'),
-    prompt_prefix:    (document.getElementById('settings-prompt-prefix')?.value.trim() || ''),
-    prompt_suffix:    (document.getElementById('settings-prompt-suffix')?.value.trim() || ''),
-    temperature:      parseFloat(document.getElementById('settings-temperature')?.value ?? '0.3'),
+    temperature:      parseFloat(document.getElementById('settings-temperature')?.value ?? String(DEFAULT_TEMPERATURE)),
     max_tokens:       (() => {
-      const v = parseInt(document.getElementById('settings-max-tokens')?.value ?? '1024', 10);
+      const v = parseInt(document.getElementById('settings-max-tokens')?.value ?? String(MAX_TOKENS_SLIDER_MAX), 10);
       return v >= MAX_TOKENS_SLIDER_MAX ? null : v;   // null = no limit
     })(),
     personas:         (window._PERSONAS_DRAFT || []),

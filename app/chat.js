@@ -401,9 +401,9 @@ function applyKnowledgeChips(bubble, kbSources) {
 }
 
 // ── PROMPT INSPECTOR ──────────────────────────────────────────────────
-// The app assembles a system prompt from six or seven sources — persona, scope
-// rule, language grammar, knowledge blurb, retrieved chunks, web results,
-// prefix/suffix — and then never shows it to anyone. A student watching the
+// The app assembles a system prompt from several sources — persona, scope
+// rule, language grammar, knowledge blurb, retrieved chunks, web results —
+// and then never shows it to anyone. A student watching the
 // trace can see that a prompt was built but not what it says, which leaves the
 // most important artifact in the whole pipeline invisible.
 //
@@ -907,12 +907,23 @@ function hideWelcome() {
   if (sb && window.innerWidth > 640) sb.classList.add('collapsed');
 }
 
+// The participant's own chat head. A person glyph rather than the word "You":
+// their messages are the ones on the right, in the accent colour, so the label
+// was restating the layout — and it read as an address ("You") in a column that
+// is otherwise faces. Shared with the session replay in app/sessions.js so a
+// reopened conversation looks like the one that was live.
+const USER_AVATAR_GLYPH = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
+function userAvatarMarkup() {
+  return `<div class="avatar user" title="You">${USER_AVATAR_GLYPH}</div>`;
+}
+
 function appendUserMessage(text) {
   const chatArea = document.getElementById('chat-area');
   hideWelcome();
   const row = document.createElement('div');
   row.className = 'message-row user';
-  row.innerHTML = `<div class="avatar user">You</div><div class="bubble user">${escHtml(text)}</div>`;
+  row.innerHTML = `${userAvatarMarkup()}<div class="bubble user">${escHtml(text)}</div>`;
   chatArea.appendChild(row);
   const time = document.createElement('div');
   time.className = 'message-time user';

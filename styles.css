@@ -689,7 +689,16 @@
     background: rgba(255,255,255,0.12);
     flex-shrink: 0;
   }
+  /* Now that this line names whatever endpoint is live, it can be handed a
+     bare host — "generativelanguage.googleapis.com · Gemini" — so it has to be
+     able to cut. min-width:0 is what lets it: without it the flex item refuses
+     to shrink below its text and pushes the card wider than the sidebar. */
   .sidebar-wifi-ssid {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 12px;
     font-weight: 700;
     font-family: var(--font-mono);
@@ -875,10 +884,15 @@
     gap: 4px;
   }
 
+  /* Avatars sit at the TOP of a row, level with the first line of the message
+     and with the name label above them. Bottom-aligned, a long reply parked
+     the AI's face down beside the *next* prompt, which read as if the person
+     below had written the answer. Both bubbles already point their sharp
+     corner at that top edge. */
   .message-row {
     display: flex;
     gap: 10px;
-    align-items: flex-end;
+    align-items: flex-start;
   }
   .message-row.user { flex-direction: row-reverse; }
 
@@ -896,11 +910,23 @@
   .avatar.ai {
     color: white;
   }
+  /* The participant's own face: a person glyph, not the word "You". Their own
+     messages are already the ones on the right in their own colour — a text
+     label there was spending the only 28px it has on something the layout
+     says twice over.
+     Same brand palette as the AI's fallback face, deliberately: these are the
+     two speakers in one conversation, and a grey chip opposite a brand-gradient
+     one read as a placeholder waiting to be filled in. What separates them is
+     geometry, not hue — a rounded square instead of a circle, and a radial
+     highlight off the top-right corner instead of the AI's 135° diagonal
+     sweep. Distinguishable at 28px and in a thumbnail; still one family. */
   .avatar.user {
-    background: var(--border-light);
-    color: var(--text-secondary);
-    font-size: 11px;
+    border-radius: 9px;
+    background: radial-gradient(circle at 78% 14%,
+      var(--dc-gold) 0%, var(--dc-violet) 32%, var(--dc-blue) 78%);
+    color: #fff;
   }
+  .avatar.user svg { display: block; }
   /* An uploaded picture sits inside the avatar, so the brand gradient stays
      behind anything transparent instead of being replaced by it. */
   .avatar.ai .avatar-img {
@@ -916,10 +942,8 @@
      not be able to widen it — that would shrink every bubble in the
      conversation. Absolute positioning also keeps it out of the row's flex
      layout entirely, so no wrapper element is needed around the avatar.
-     Anchored to the row's top rather than to the avatar: .message-row is
-     `align-items: flex-end`, so on a tall multi-line reply the avatar sits at
-     the bottom and a label placed above *it* would land on top of the bubble
-     text. padding-top opens the band the label lives in. */
+     padding-top opens the band the label lives in, above both the avatar and
+     the bubble. */
   .message-row.has-ident {
     position: relative;
     padding-top: 18px;   /* label is ~14px tall; the rest is its gap to the bubble */
@@ -4494,7 +4518,7 @@
   }
   .preview-avatar {
     width: 42px; height: 42px;
-    border-radius: 12px;
+    border-radius: 50%;
     background: linear-gradient(135deg, var(--dc-blue) 0%, color-mix(in srgb, var(--dc-blue) 73%, transparent) 100%);
     color: #fff;
     font-size: 14px;
@@ -4509,32 +4533,94 @@
   }
   .preview-info { flex: 1; min-width: 0; }
 
-  /* Profile picture control (Personalize tab) */
+  /* Profile picture control (Personalize tab).
+     Round, because round is the only shape this picture is ever seen in — the
+     squircle preview was quietly promising a crop the conversation never uses,
+     so a face that fit here could still lose its ears in chat. */
   .settings-avatar-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
   }
+  .avatar-drop {
+    position: relative;
+    width: 56px; height: 56px;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 50%;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .avatar-drop:focus-visible { outline: 2px solid var(--dc-blue); outline-offset: 3px; }
   .settings-avatar-preview {
-    width: 48px; height: 48px;
-    border-radius: 12px;
+    width: 56px; height: 56px;
+    border-radius: 50%;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     color: #fff;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 800;
     letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(22,32,46,0.14);
+    transition: filter 0.15s, box-shadow 0.15s;
   }
+  .avatar-drop:hover .settings-avatar-preview { filter: brightness(0.9); }
+  /* The badge is the affordance: without it a bare picture is just a picture,
+     and the only way to learn it was clickable was to click it. */
+  .avatar-drop-badge {
+    position: absolute;
+    right: -1px; bottom: -1px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .avatar-drop:hover .avatar-drop-badge { color: var(--dc-blue); border-color: var(--dc-blue); }
   .settings-avatar-preview .avatar-img,
   .preview-avatar .avatar-img {
     width: 100%; height: 100%;
     object-fit: cover;
     display: block;
   }
+  .settings-avatar-text {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
   .settings-avatar-btns { display: flex; gap: 8px; }
+  /* Remove is destructive and rarely what you came for, so it doesn't get the
+     same outline as Upload — it stays quiet until you're on it, then commits
+     to red rather than pretending the click is reversible. */
+  .avatar-remove-btn {
+    flex: 0 0 auto;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font-main);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .avatar-remove-btn:hover {
+    color: var(--danger);
+    border-color: var(--danger-edge);
+    background: var(--danger-tint);
+  }
   .preview-greeting {
     font-size: 11px;
     color: var(--text-muted);
@@ -4887,7 +4973,9 @@
     color: var(--text-primary);
     border: 1px solid var(--border-light);
     font-weight: 500;
-    border-radius: 20px 20px 4px 20px;
+    /* Notch at the top-right, where the avatar now is — it was bottom-right,
+       aimed at where a bottom-aligned avatar used to sit. */
+    border-radius: 20px 4px 20px 20px;
   }
   [data-theme="dark"] .bubble.user { background: rgba(255,255,255,0.05); }
 

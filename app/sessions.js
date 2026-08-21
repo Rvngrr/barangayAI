@@ -110,7 +110,7 @@ function renderSessionMessages(session) {
     if (msg.role === 'user') {
       const row = document.createElement('div');
       row.className = 'message-row user';
-      row.innerHTML = `<div class="avatar user">You</div><div class="bubble user">${escHtml(msg.content)}</div>`;
+      row.innerHTML = `${userAvatarMarkup()}<div class="bubble user">${escHtml(msg.content)}</div>`;
       chatArea.appendChild(row);
       const t = document.createElement('div');
       t.className = 'message-time user';

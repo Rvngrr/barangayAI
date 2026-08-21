@@ -225,21 +225,51 @@ function exportPublishConfig() {
   updatePublishSummary();
 }
 
+// Jumps to the tab that owns a setting and puts the thing you came to change
+// in front of you. The publish summary reports gaps ("no picture", "name
+// required"), and a summary that names a gap without offering the way to fix
+// it just starts a hunt through four tabs.
+function gotoSettingsField(tab, targetId) {
+  switchSettingsTab(tab);
+  const pane = document.querySelector(`[data-settings-pane="${tab}"]`);
+  // No specific field means "just take me there" — and the pane keeps whatever
+  // scroll position it had, which on a long pane can land you mid-form.
+  if (pane) pane.scrollTop = 0;
+  const t = targetId && document.getElementById(targetId);
+  if (!t) return;
+  t.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  if (typeof t.focus === 'function' && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) {
+    t.focus({ preventScroll: true });
+  }
+}
+
+function settingsLink(label, tab, targetId) {
+  return `<a href="#" class="publish-link" onclick="gotoSettingsField('${tab}','${targetId || ''}');return false;">${escHtml(label)}</a>`;
+}
+
 // Shows what would actually ship, so "Publish" is never a leap of faith.
+// Row values are pre-escaped here rather than at render time, because the
+// rows that report a gap carry a link to where it gets fixed.
 function updatePublishSummary() {
   const el = document.getElementById('publish-summary');
   if (!el) return;
   const cfg = buildPublishConfig();
   const rows = [
-    ['Name', cfg.settings.ai_name],
-    ['Picture', cfg.settings.ai_avatar ? 'included — visible to everyone' : 'initials only'],
-    ['Language', cfg.settings.reply_language],
+    ['Name', escHtml(cfg.settings.ai_name)],
+    ['Picture', cfg.settings.ai_avatar
+      ? 'included — visible to everyone'
+      : `none set — initials shown · ${settingsLink('add one', 'personalize', 'settings-avatar-preview')}`],
+    ['Language', escHtml(cfg.settings.reply_language)],
     ['Personality', cfg.settings.ai_tone ? 'custom prompt' : 'default'],
-    ['Sources', cfg.sources.length ? `${cfg.sources.length} file${cfg.sources.length === 1 ? '' : 's'}` : 'none'],
-    ['Your name', cfg.creator_name || '⚠ required — set it in Personalize'],
+    ['Sources', cfg.sources.length
+      ? `${cfg.sources.length} file${cfg.sources.length === 1 ? '' : 's'}`
+      : `none · ${settingsLink('add files', 'training', 'training-dropzone')}`],
+    ['Your name', cfg.creator_name
+      ? escHtml(cfg.creator_name)
+      : `<span class="publish-warn">⚠ required</span> — set it in ${settingsLink('Personalize', 'personalize', 'settings-creator-name')}`],
   ];
   el.innerHTML = rows.map(([k, v]) =>
-    `<div class="publish-row"><b>${escHtml(k)}</b><span>${escHtml(String(v))}</span></div>`).join('')
+    `<div class="publish-row"><b>${escHtml(k)}</b><span>${v}</span></div>`).join('')
     + `<div class="publish-row"><b>Your API keys</b><span>never included — they stay on Vercel</span></div>`;
 }
 
@@ -260,4 +290,5 @@ window.hideOwnerPitchFooter   = hideOwnerPitchFooter;
 window.welcomeBriefText       = welcomeBriefText;
 window.exportPublishConfig    = exportPublishConfig;
 window.updatePublishSummary   = updatePublishSummary;
+window.gotoSettingsField      = gotoSettingsField;
 window.previewAsVisitor       = previewAsVisitor;

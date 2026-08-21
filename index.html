@@ -1404,43 +1404,39 @@ git push</code></div></div>
     <!-- Training Pane -->
     <div class="settings-body" data-settings-pane="training" style="display:none;">
 
-      <!-- AI Knowledge & Abilities (moved from Personalize) -->
       <div class="settings-field">
-        <label class="settings-label" for="settings-ai-knowledge">AI Knowledge &amp; Abilities</label>
-        <textarea class="settings-input settings-textarea" id="settings-ai-knowledge" placeholder="e.g. You can help with coding in Python, JavaScript, and Dart. You know about the DEVCON Barangay AI Code Camp curriculum. You are familiar with Flutter and Firebase."></textarea>
-        <span class="settings-hint">Tell the AI what it knows and what it can help with. Appended to the personality prompt so the AI stays aware of its own capabilities.</span>
+        <label class="settings-label" for="settings-ai-knowledge">What the AI Knows</label>
+        <textarea class="settings-input settings-textarea" id="settings-ai-knowledge" style="min-height:62px;" placeholder="e.g. Python, JavaScript, Dart, Flutter, Firebase, the DEVCON Barangay AI curriculum"></textarea>
+        <span class="settings-hint">Added to the personality prompt.</span>
       </div>
 
       <hr class="settings-divider">
 
       <div class="settings-field">
-        <label class="settings-label">Train Your AI with Files</label>
-        <span class="settings-hint" style="margin-bottom:6px;">
-          Upload reference files (text, markdown, JSON, CSV). Their content is injected into the AI's system prompt as background knowledge — so the AI "knows" what's in them. This is not model fine-tuning; it works locally in your browser.
-        </span>
+        <label class="settings-label">Reference Files</label>
 
         <div id="training-dropzone"
              ondragover="event.preventDefault(); this.classList.add('drag');"
              ondragleave="this.classList.remove('drag');"
              ondrop="handleTrainingDrop(event)"
              onclick="document.getElementById('training-file-input').click()"
-             style="margin-top:8px; padding:18px; border:2px dashed var(--border); border-radius:10px; text-align:center; cursor:pointer; color:var(--text-muted); font-size:13px; transition:all 0.15s;">
-          <div style="font-weight:600; color:var(--text-primary); margin-bottom:4px;">Drop files here or click to browse</div>
-          <div style="font-size:11.5px;">Accepts .txt, .md, .json, .csv, .log, .pdf, .docx &nbsp;·&nbsp; up to 2 MB each</div>
+             style="margin-top:3px; padding:14px; border:2px dashed var(--border); border-radius:10px; text-align:center; cursor:pointer; color:var(--text-muted); font-size:13px; transition:all 0.15s;">
+          <div style="font-weight:600; color:var(--text-primary);">Drop files or click to browse</div>
+          <div style="font-size:11px; margin-top:2px;">.txt .md .json .csv .log .pdf .docx &nbsp;·&nbsp; 2 MB each</div>
           <input id="training-file-input" type="file" multiple accept=".txt,.md,.markdown,.json,.csv,.log,.pdf,.doc,.docx,text/plain,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                  style="display:none;" onchange="handleTrainingFiles(this.files); this.value='';">
         </div>
 
-        <div id="training-files-list" style="margin-top:12px; display:flex; flex-direction:column; gap:6px;"></div>
-        <div id="training-files-meta" style="margin-top:6px; font-size:11.5px; color:var(--text-muted);"></div>
+        <div id="training-files-list" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;"></div>
+        <div id="training-files-meta" style="margin-top:4px; font-size:11px; color:var(--text-muted);"></div>
+        <span class="settings-hint">Contents become background knowledge in the AI's prompt. Stays in your browser.</span>
       </div>
 
       <hr class="settings-divider">
 
       <div class="settings-field">
-        <label class="settings-label" for="settings-training-notes">Additional Training Notes</label>
-        <textarea class="settings-input settings-textarea" id="settings-training-notes" placeholder="e.g. Always cite the uploaded barangay handbook when answering policy questions. Prefer examples from the uploaded curriculum."></textarea>
-        <span class="settings-hint">Free-form instructions about how the AI should use your uploaded files.</span>
+        <label class="settings-label" for="settings-training-notes">How to Use the Files</label>
+        <textarea class="settings-input settings-textarea" id="settings-training-notes" style="min-height:62px;" placeholder="e.g. Cite the barangay handbook for policy questions"></textarea>
       </div>
     </div>
 
@@ -1515,15 +1511,6 @@ git push</code></div></div>
       </div>
 
       <div class="settings-field">
-        <label class="settings-label">What gets published</label>
-        <div id="publish-summary"></div>
-        <span class="settings-hint">API keys are never written to this file — it goes to GitHub, where anyone could read it. Your own hosted-model key belongs in a Vercel environment variable instead (step 4 below), where only the server can read it.</span>
-      </div>
-
-      <button class="settings-btn-primary" onclick="exportPublishConfig()" style="width:100%; margin-bottom:6px;">Download my-ai.json</button>
-      <span class="settings-hint" style="display:block; margin-bottom:14px;">Publishes what you last saved. Changed something just now? Hit <strong>Apply &amp; Save</strong> first, then come back.</span>
-
-      <div class="settings-field">
         <label class="settings-label">Then, to go live</label>
         <div class="guide-step"><div class="guide-step-num">1</div><div class="guide-step-body">
           <b>Drop the file into your project folder</b><p>Right beside <em>index.html</em>. That's it — no renaming, no editing.</p></div></div>
@@ -1543,8 +1530,18 @@ git push</code></div></div>
         <span>Your published copy answers using that hosted model — so it works for anyone, anywhere, but it isn't the private one, and every message it answers spends a little of your own free allowance. <strong>The offline AI on this computer stays the real one</strong> — unmetered, however much you use it. The live link just proves you built it.</span>
       </div>
 
+      <div class="settings-field">
+        <label class="settings-label">What gets published</label>
+        <span class="settings-hint" style="margin-bottom:8px;">Your current setup. Change any of it in <a href="#" class="publish-link" onclick="gotoSettingsField('personalize');return false;">Personalize</a>, then Apply &amp; Save.</span>
+        <div id="publish-summary"></div>
+        <span class="settings-hint">API keys are never written to this file — it goes to GitHub, where anyone could read it. Your own hosted-model key belongs in a Vercel environment variable instead (step 4 above), where only the server can read it.</span>
+      </div>
+
       <button class="settings-btn-secondary" onclick="previewAsVisitor()" style="width:100%; margin-top:12px;">Preview what visitors will see</button>
       <span class="settings-hint" style="display:block; margin-top:6px;">Opens your own copy locked down, exactly as the world gets it. Needs <code>my-ai.json</code> in the folder already.</span>
+
+      <button class="settings-btn-primary" onclick="exportPublishConfig()" style="width:100%; margin-top:14px; margin-bottom:6px;">Download my-ai.json</button>
+      <span class="settings-hint" style="display:block;">Publishes what you last saved. Changed something just now? Hit <strong>Apply &amp; Save</strong> first, then come back.</span>
     </div>
 
     <div class="settings-footer">

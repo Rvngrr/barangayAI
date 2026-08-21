@@ -123,7 +123,7 @@ function renderTrainingFilesList() {
   const draft = window._TRAINING_FILES_DRAFT || [];
   list.innerHTML = '';
   if (!draft.length) {
-    if (meta) meta.textContent = 'No files yet. Files are saved with your settings when you click Apply & Save.';
+    if (meta) meta.textContent = 'No files yet.';
     return;
   }
   draft.forEach((f, i) => {
@@ -139,7 +139,7 @@ function renderTrainingFilesList() {
     list.appendChild(row);
   });
   const total = draft.reduce((n, f) => n + (f.size || 0), 0);
-  if (meta) meta.textContent = `${draft.length} file${draft.length === 1 ? '' : 's'} · ${formatBytes(total)} total · saved on Apply & Save`;
+  if (meta) meta.textContent = `${draft.length} file${draft.length === 1 ? '' : 's'} · ${formatBytes(total)}`;
 }
 
 function formatBytes(n) {

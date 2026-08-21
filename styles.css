@@ -5065,3 +5065,14 @@ body.visitor-mode .kb-item { cursor: default; }
   overflow: hidden;
   margin-bottom: 12px;
 }
+/* Rows that report a gap link to the tab that fixes it, so the summary is a
+   starting point rather than a verdict. */
+.publish-link {
+  color: var(--dc-blue);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.publish-link:hover { text-decoration-thickness: 2px; }
+.publish-warn { color: var(--danger); font-weight: 600; }

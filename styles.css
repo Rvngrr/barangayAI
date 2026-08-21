@@ -1825,7 +1825,7 @@
     font-size: 12px;
     font-weight: 600;
     color: var(--text-secondary);
-    transition: background 0.15s, color 0.15s, transform 0.15s;
+    transition: background 0.15s, color 0.15s, transform 0.15s, gap 0.18s ease, padding 0.18s ease;
     white-space: nowrap;
     flex-shrink: 0;
     letter-spacing: 0.1px;
@@ -1861,6 +1861,37 @@
   .model-select-btn.open .model-select-caret { transform: rotate(180deg); opacity: 1; }
   #model-select-icon { display: inline-flex; align-items: center; flex-shrink: 0; }
   #model-select-icon img.model-dd-icon { opacity: 1; }
+
+  /* Collapsed pill (in-conversation only) — once there are messages on screen
+     the picker is sharing its row with the draft, so it drops back to a bare
+     model name and hands the width to the textarea. Hovering it, or opening
+     the dropdown, restores the full logo + name + chevron.
+
+     Welcome mode keeps the full pill: nothing is competing for the row yet,
+     and that's the one moment the picker should be unmissable. Scoped to
+     (hover: hover) + desktop widths so touch never gets a control that only
+     un-collapses on an event it can't produce — mobile keeps its own layout,
+     where the controls already have a row to themselves. */
+  @media (hover: hover) and (min-width: 641px) {
+    /* max-width, not display — a collapsing width is what can animate, and
+       the flex items need overflow clipped because the SVGs inside them are
+       fixed-size and won't shrink with their box. */
+    #model-select-icon,
+    .model-select-btn .model-select-caret {
+      max-width: 20px;
+      overflow: hidden;
+      transition: max-width 0.18s ease, opacity 0.18s ease, transform 0.2s;
+    }
+    .main:not(.welcome-mode) .model-select-btn:not(:hover):not(:focus-visible):not(.open) {
+      gap: 0;
+      padding: 0 4px;
+    }
+    .main:not(.welcome-mode) .model-select-btn:not(:hover):not(:focus-visible):not(.open) > #model-select-icon,
+    .main:not(.welcome-mode) .model-select-btn:not(:hover):not(:focus-visible):not(.open) > .model-select-caret {
+      max-width: 0;
+      opacity: 0;
+    }
+  }
 
   /* TOOLS MENU (Gemini "+" style) — collapses sources/thinking/web-search into one button */
   .tools-wrap { position: relative; flex-shrink: 0; }

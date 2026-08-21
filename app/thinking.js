@@ -335,31 +335,30 @@ async function sendMessage() {
     if (window._setEduCard) window._setEduCard('<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>', `First request — loading ${window.ACTIVE_MODEL} from disk into RAM. This takes a few seconds the first time. After this, all replies will be much faster.`);
   }
 
-  // Apply prefix / suffix to the message sent to the model (history stays clean)
-  const _prefix = window._PROMPT_PREFIX_ACTIVE || '';
-  const _suffix = window._PROMPT_SUFFIX_ACTIVE || '';
+  // Live web results ride along with the message sent to the model (history
+  // stays clean)
   let _outgoing = messages;
-  if (_prefix || _suffix || _webContext) {
+  if (_webContext) {
     _outgoing = messages.slice();
     const lastUser = _outgoing.length - 1;
     if (lastUser >= 0 && _outgoing[lastUser].role === 'user') {
-      // Web context goes first (strongest grounding), then prefix, then the question.
+      // Web context goes first (strongest grounding), then the question.
       _outgoing[lastUser] = {
         ..._outgoing[lastUser],
-        content: `${_webContext ? _webContext + '\n\n' : ''}${_prefix ? _prefix + '\n\n' : ''}${_outgoing[lastUser].content}${_suffix ? '\n\n' + _suffix : ''}`
+        content: `${_webContext}\n\n${_outgoing[lastUser].content}`
       };
     }
   }
 
-  const _temperature = (typeof window._TEMPERATURE_ACTIVE === 'number') ? window._TEMPERATURE_ACTIVE : 0.3;
+  const _temperature = (typeof window._TEMPERATURE_ACTIVE === 'number') ? window._TEMPERATURE_ACTIVE : DEFAULT_TEMPERATURE;
   const payload = {
     model: window.ACTIVE_MODEL,
     messages: [{ role: 'system', content: systemPrompt }, ..._outgoing],
     temperature: _temperature
   };
-  // _MAX_TOKENS_ACTIVE === null means "No limit" → omit the cap entirely
-  if (window._MAX_TOKENS_ACTIVE !== null) {
-    payload.max_tokens = (typeof window._MAX_TOKENS_ACTIVE === 'number') ? window._MAX_TOKENS_ACTIVE : 1024;
+  // No limit is the default, and null says so → send a cap only when one is set
+  if (typeof window._MAX_TOKENS_ACTIVE === 'number') {
+    payload.max_tokens = window._MAX_TOKENS_ACTIVE;
   }
   applyThinkingSwitch(payload);
 
@@ -371,9 +370,7 @@ async function sendMessage() {
   // ends on the student's own words — which is the point being made: of
   // everything the model just read, this small piece was yours.
   _part('Live web results', _webContext, 'web search was on for this message');
-  _part('Text added before your message', _prefix, 'Settings › Personalize › Prompt prefix');
   _part('What you typed', text, 'the message box');
-  _part('Text added after your message', _suffix, 'Settings › Personalize › Prompt suffix');
   if (payload.messages.length > 2) {
     // Everything except the system prompt and the current question.
     const historyChars = payload.messages.slice(1, -1)
@@ -429,16 +426,16 @@ async function sendMessage() {
 
     const chatArea = document.getElementById('chat-area');
     const row = document.createElement('div');
-    row.className = 'message-row';
-    const avatarDiv = document.createElement('div');
-    avatarDiv.className = 'avatar ai';
-    avatarDiv.textContent = getAIAvatar();
+    // Read before the row is appended, while #typing-row is still the last thing
+    // in the chat — _startsAIRun() skips it for exactly this case.
+    const withName = _startsAIRun();
+    row.className = 'message-row' + (withName ? ' has-ident' : '');
+    row.innerHTML = aiIdentMarkup(withName);
     const bubble = document.createElement('div');
     bubble.className = 'bubble ai';
     const msgBody = document.createElement('div');
     msgBody.className = 'msg-body';
     bubble.appendChild(msgBody);
-    row.appendChild(avatarDiv);
     row.appendChild(bubble);
 
     // Headers arriving doesn't mean the model has produced anything yet — for a big
@@ -678,8 +675,9 @@ async function sendMessage() {
     if (_aborted) {
       const ca = document.getElementById('chat-area');
       const row = document.createElement('div');
-      row.className = 'message-row';
-      row.innerHTML = `<div class="avatar ai">${getAIAvatar()}</div><div class="bubble ai"></div>`;
+      const withName = _startsAIRun();
+      row.className = 'message-row' + (withName ? ' has-ident' : '');
+      row.innerHTML = `${aiIdentMarkup(withName)}<div class="bubble ai"></div>`;
       const cancelBubble = row.querySelector('.bubble');
       attachTrace(cancelBubble, failTrace);
       cancelBubble.appendChild(cancelledNoteEl());
@@ -918,9 +916,9 @@ async function sendMessage() {
           title: "Something went wrong",
           desc: "The AI couldn't be reached. Try these fixes one by one.",
           steps: [
-            { text: 'Make sure Ollama is running:', code: OLLAMA_START_CMD },
+            { text: 'Make sure Ollama is running — from the project folder:', code: OLLAMA_SCRIPT_CMD },
             { text: 'Check the model is installed:', code: 'ollama list' },
-            { text: 'Try the API directly in your browser:', code: 'localhost:11434/v1/models' },
+            { text: 'Try the API directly in your browser:', code: '127.0.0.1:11434/v1/models' },
             { text: 'If nothing works, raise your hand — your facilitator can help' }
           ],
           cta: true,

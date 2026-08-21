@@ -72,6 +72,10 @@ function hydratePublishedSettings(cfg) {
     chunks: window.BarangayRAG ? window.BarangayRAG.chunkText(f.content || '') : [],
     addedAt: f.addedAt || Date.now(),
   }));
+  // maxlength="40" guards the Settings field, but nothing guards a hand-edited
+  // my-ai.json — and a 500-char name would run clean off the chat label. CSS
+  // truncates it visually; this stops it being carried around at full length.
+  if (typeof s.ai_name === 'string') s.ai_name = s.ai_name.slice(0, 60);
   // A visitor must never inherit the owner's keys or spend their quota.
   delete s.tavily_api_key;
   s.web_search_enabled = false;
@@ -168,16 +172,16 @@ function buildPublishConfig() {
     creator_name: (s.creator_name || '').trim(),
     settings: {
       ai_name:          s.ai_name || AI_NAME,
+      // ~5 KB against a file that already tolerates 8 MB of sources.
+      ai_avatar:        s.ai_avatar || '',
       ai_tone:          s.ai_tone || '',
       ai_knowledge:     s.ai_knowledge || '',
       brand_color:      s.brand_color || BRAND_COLOR,
       welcome_greeting: s.welcome_greeting || '',
       reply_language:   s.reply_language || 'english',
       training_notes:   s.training_notes || '',
-      prompt_prefix:    s.prompt_prefix || '',
-      prompt_suffix:    s.prompt_suffix || '',
-      temperature:      (typeof s.temperature === 'number') ? s.temperature : 0.3,
-      max_tokens:       (s.max_tokens === null || typeof s.max_tokens === 'number') ? s.max_tokens : 1024,
+      temperature:      (typeof s.temperature === 'number') ? s.temperature : DEFAULT_TEMPERATURE,
+      max_tokens:       (s.max_tokens === null || typeof s.max_tokens === 'number') ? s.max_tokens : DEFAULT_MAX_TOKENS,
       personas:         Array.isArray(s.personas) ? s.personas : [],
       active_persona:   s.active_persona || '',
       thinking_enabled: s.thinking_enabled === true,
@@ -221,20 +225,51 @@ function exportPublishConfig() {
   updatePublishSummary();
 }
 
+// Jumps to the tab that owns a setting and puts the thing you came to change
+// in front of you. The publish summary reports gaps ("no picture", "name
+// required"), and a summary that names a gap without offering the way to fix
+// it just starts a hunt through four tabs.
+function gotoSettingsField(tab, targetId) {
+  switchSettingsTab(tab);
+  const pane = document.querySelector(`[data-settings-pane="${tab}"]`);
+  // No specific field means "just take me there" — and the pane keeps whatever
+  // scroll position it had, which on a long pane can land you mid-form.
+  if (pane) pane.scrollTop = 0;
+  const t = targetId && document.getElementById(targetId);
+  if (!t) return;
+  t.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  if (typeof t.focus === 'function' && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) {
+    t.focus({ preventScroll: true });
+  }
+}
+
+function settingsLink(label, tab, targetId) {
+  return `<a href="#" class="publish-link" onclick="gotoSettingsField('${tab}','${targetId || ''}');return false;">${escHtml(label)}</a>`;
+}
+
 // Shows what would actually ship, so "Publish" is never a leap of faith.
+// Row values are pre-escaped here rather than at render time, because the
+// rows that report a gap carry a link to where it gets fixed.
 function updatePublishSummary() {
   const el = document.getElementById('publish-summary');
   if (!el) return;
   const cfg = buildPublishConfig();
   const rows = [
-    ['Name', cfg.settings.ai_name],
-    ['Language', cfg.settings.reply_language],
+    ['Name', escHtml(cfg.settings.ai_name)],
+    ['Picture', cfg.settings.ai_avatar
+      ? 'included — visible to everyone'
+      : `none set — initials shown · ${settingsLink('add one', 'personalize', 'settings-avatar-preview')}`],
+    ['Language', escHtml(cfg.settings.reply_language)],
     ['Personality', cfg.settings.ai_tone ? 'custom prompt' : 'default'],
-    ['Sources', cfg.sources.length ? `${cfg.sources.length} file${cfg.sources.length === 1 ? '' : 's'}` : 'none'],
-    ['Your name', cfg.creator_name || '⚠ required — set it in Personalize'],
+    ['Sources', cfg.sources.length
+      ? `${cfg.sources.length} file${cfg.sources.length === 1 ? '' : 's'}`
+      : `none · ${settingsLink('add files', 'training', 'training-dropzone')}`],
+    ['Your name', cfg.creator_name
+      ? escHtml(cfg.creator_name)
+      : `<span class="publish-warn">⚠ required</span> — set it in ${settingsLink('Personalize', 'personalize', 'settings-creator-name')}`],
   ];
   el.innerHTML = rows.map(([k, v]) =>
-    `<div class="publish-row"><b>${escHtml(k)}</b><span>${escHtml(String(v))}</span></div>`).join('')
+    `<div class="publish-row"><b>${escHtml(k)}</b><span>${v}</span></div>`).join('')
     + `<div class="publish-row"><b>Your API keys</b><span>never included — they stay on Vercel</span></div>`;
 }
 
@@ -255,4 +290,5 @@ window.hideOwnerPitchFooter   = hideOwnerPitchFooter;
 window.welcomeBriefText       = welcomeBriefText;
 window.exportPublishConfig    = exportPublishConfig;
 window.updatePublishSummary   = updatePublishSummary;
+window.gotoSettingsField      = gotoSettingsField;
 window.previewAsVisitor       = previewAsVisitor;

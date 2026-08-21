@@ -165,7 +165,9 @@
             <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
           </svg>
         </div>
-        <div class="sidebar-wifi-ssid">Ollama · Qwen</div>
+        <!-- Rewritten by renderConnIdentity() to the live server · family;
+             the default here is what a first run shows. -->
+        <div class="sidebar-wifi-ssid" id="sidebar-wifi-ssid">Ollama · Qwen</div>
       </div>
       <div class="sidebar-wifi-status checking" id="sidebar-wifi-status">
         <div class="swifi-dot"></div>
@@ -536,7 +538,7 @@
         <b>Select your model &amp; manage endpoints</b><p>Open the picker again and choose the new cloud model — the header chip updates to show it. Under <strong>Added Models</strong> you can enable/disable individual models or remove an endpoint. Your added endpoints are saved and survive reloads.</p></div></div>
 
       <div class="guide-step"><div class="guide-step-num">6</div><div class="guide-step-body">
-        <b>Adding a custom LOCAL endpoint</b><p>Running Ollama (or any OpenAI-compatible server) on another port or machine? Use the LOCAL card and paste its URL — e.g. <code class="guide-cmd">http://localhost:11434/v1</code> — add an optional key for protected servers, then <strong>Add</strong>. Same Test → Add flow.</p></div></div>
+        <b>Adding a custom LOCAL endpoint</b><p>Running Ollama (or any OpenAI-compatible server) on another port or machine? Use the LOCAL card and paste its URL — e.g. <code class="guide-cmd">http://127.0.0.1:11434/v1</code> — add an optional key for protected servers, then <strong>Add</strong>. Same Test → Add flow. Write local endpoints as <code>127.0.0.1</code>, not <code>localhost</code>: on Windows <code>localhost</code> resolves to IPv6 <code>::1</code> first and Ollama listens on IPv4 only, so it gets refused.</p></div></div>
     </section>
 
     <!-- PAGE 6 — Hour 3 Customize -->
@@ -775,8 +777,8 @@ git push</code></div></div>
           </div>
 
           <div style="display:grid;grid-template-columns:90px 1fr;border-bottom:1px solid var(--border-light);font-size:12.5px">
-            <div style="padding:10px 12px;background:var(--dc-blue-light);font-weight:700;color:var(--text-primary);display:flex;align-items:flex-start">localhost</div>
-            <div style="padding:10px 12px;color:var(--text-secondary);line-height:1.6">A special address that means "this computer." When you visit localhost:11434, you're talking to a server running on your own machine, not the internet. <span style="color:var(--text-muted);font-style:italic">Like calling your own phone — you're not calling someone else.</span></div>
+            <div style="padding:10px 12px;background:var(--dc-blue-light);font-weight:700;color:var(--text-primary);display:flex;align-items:flex-start">localhost / 127.0.0.1</div>
+            <div style="padding:10px 12px;color:var(--text-secondary);line-height:1.6">A special address that means "this computer." When you visit 127.0.0.1:11434, you're talking to a server running on your own machine, not the internet. <code>localhost</code> is the word form of the same address, but type the numbers when connecting a model — on Windows the word can point at IPv6 <code>::1</code>, which Ollama isn't listening on. <span style="color:var(--text-muted);font-style:italic">Like calling your own phone — you're not calling someone else.</span></div>
           </div>
 
           <div style="display:grid;grid-template-columns:90px 1fr;border-bottom:1px solid var(--border-light);font-size:12.5px">
@@ -927,7 +929,7 @@ git push</code></div></div>
         <summary><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>View installation requirements</summary>
         <div class="install-req-body">
           <div class="install-req-row"><b>OS</b><span>Windows 10/11, macOS 12+, or Linux</span></div>
-          <div class="install-req-row"><b>Ollama</b><span>Installed and running — <code data-ollama-cmd="start">OLLAMA_ORIGINS=* ollama serve</code> (free at ollama.com)</span></div>
+          <div class="install-req-row"><b>Ollama</b><span>Installed, then started with the bundled script — <code data-ollama-cmd="script">./start-ollama.sh</code> (free at ollama.com)</span></div>
           <div class="install-req-row"><b>RAM</b><span>4 GB minimum (1B models) · 8 GB comfortable (3B) · 16 GB+ for 7B and up</span></div>
           <div class="install-req-row"><b>Disk</b><span>1–5 GB free per model — downloaded once, then it works offline</span></div>
           <div class="install-req-row"><b>GPU</b><span>Optional. It speeds up replies, but CPU-only runs small models fine</span></div>
@@ -1111,14 +1113,14 @@ git push</code></div></div>
           <span>LOCAL</span>
         </div>
         <div class="endpoint-row">
-          <input class="settings-input" id="local-endpoint" type="text" placeholder="Paste endpoint URL, e.g. http://localhost:11434/v1" autocomplete="off">
+          <input class="settings-input" id="local-endpoint" type="text" placeholder="Paste endpoint URL, e.g. http://127.0.0.1:11434/v1" autocomplete="off">
         </div>
         <input class="settings-input" id="local-key" type="password" placeholder="API key (optional — for protected local endpoints)" autocomplete="off">
         <div class="endpoint-actions">
           <button class="endpoint-btn ghost" id="local-test-btn" onclick="testEndpoint('local')">Test</button>
           <button class="endpoint-btn solid" id="local-add-btn" onclick="addEndpoint('local')">Add</button>
         </div>
-        <button class="endpoint-quickstart" id="quickstart-row" onclick="toggleQuickstart()">
+        <button class="endpoint-quickstart" id="quickstart-row" type="button" aria-expanded="false" aria-controls="quickstart-body" onclick="toggleQuickstart()">
           <span>Quickstart</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
         </button>
@@ -1145,11 +1147,11 @@ git push</code></div></div>
           <div class="qs-step">
             <span class="qs-num">3</span>
             <div class="qs-text">
-              <strong>Start the server</strong>
-              <span>Leave this running while you chat. <code>OLLAMA_ORIGINS</code> is what lets the browser reach it:</span>
-              <code data-ollama-cmd="start">OLLAMA_ORIGINS=* ollama serve</code>
-              <span>Or run the bundled script from the project folder, which also frees the port first:</span>
+              <strong>Start the server with the bundled script</strong>
+              <span>Run it from the project folder — it frees port 11434 first, then starts Ollama with browser access enabled. Double-clicking the file works too. <em>Leave that terminal open while you chat.</em></span>
               <code data-ollama-cmd="script">./start-ollama.sh</code>
+              <span>Rather type it yourself? Same thing in one line — <code>OLLAMA_ORIGINS</code> is what lets the browser reach it:</span>
+              <code data-ollama-cmd="restart">pkill -f ollama; OLLAMA_ORIGINS=* ollama serve</code>
             </div>
           </div>
 
@@ -1158,10 +1160,10 @@ git push</code></div></div>
             <div class="qs-text">
               <strong>Connect it here</strong>
               <span>Paste this endpoint in the field above, then click <strong>Add</strong>:</span>
-              <code>http://localhost:11434/v1</code>
+              <code>http://127.0.0.1:11434/v1</code>
+              <span>Use the numbers, not <code>localhost</code>: on Windows <code>localhost</code> usually resolves to IPv6 <code>::1</code> first, while Ollama listens on IPv4 only — so <code>localhost</code> gets refused before it ever reaches the server.</span>
             </div>
           </div>
-
           <p class="qs-tip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5.9 1.2 1 1.9h6c.1-.7.4-1.4 1-1.9A7 7 0 0 0 12 2z"/></svg>Tip: bigger models (<code>llama3.1:8b</code>, <code>qwen2.5:7b</code>) are smarter but need more RAM. Start small and scale up.</p>
         </div>
       </div>
@@ -1216,7 +1218,7 @@ git push</code></div></div>
     </div>
     <div class="settings-body">
       <p class="modal-text" style="margin-bottom:10px">One-click downloads pull the model straight through Ollama, so it needs to be installed and running first.</p>
-      <p class="modal-text" style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Already have it? Start it with <code data-ollama-cmd="start">OLLAMA_ORIGINS=* ollama serve</code> so the browser is allowed to reach it, then retry below. Already running but still unreachable? Stop it first with <code data-ollama-cmd="stop">pkill -f ollama</code>.</p>
+      <p class="modal-text" style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Already have it? Run the bundled script from the project folder — <code data-ollama-cmd="script">./start-ollama.sh</code> — it frees the port and starts Ollama with browser access in one go, then retry below. Prefer one line? <code data-ollama-cmd="restart">pkill -f ollama; OLLAMA_ORIGINS=* ollama serve</code>.</p>
       <div id="ollama-check-note" class="rec-cpu-note" style="color:#EF4444" hidden></div>
       <div class="endpoint-actions">
         <button class="endpoint-btn ghost" style="flex:1" onclick="openOllamaDownloadPage()">Get Ollama ↗</button>
@@ -1285,6 +1287,29 @@ git push</code></div></div>
           <button type="button" class="persona-new-btn" onclick="newPersona()">+ New</button>
         </div>
         <span class="settings-hint">Save multiple personas and switch between them. The selected persona's name &amp; personality below are what the AI uses in chat.</span>
+      </div>
+
+      <hr class="settings-divider">
+
+      <!-- Profile picture. The face itself is the upload target — a camera
+           badge says so — with the buttons beside it as the explicit path. -->
+      <div class="settings-field">
+        <label class="settings-label">Profile Picture</label>
+        <div class="settings-avatar-row">
+          <button type="button" class="avatar-drop" aria-label="Upload profile picture"
+                  onclick="document.getElementById('settings-avatar-input').click()">
+            <span class="settings-avatar-preview" id="settings-avatar-preview">BA</span>
+            <span class="avatar-drop-badge" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
+          </button>
+          <div class="settings-avatar-text">
+            <div class="settings-avatar-btns">
+              <button type="button" class="persona-new-btn" onclick="document.getElementById('settings-avatar-input').click()">Upload</button>
+              <button type="button" class="avatar-remove-btn" id="settings-avatar-remove" onclick="removeAIAvatar()" style="display:none">Remove</button>
+            </div>
+            <span class="settings-hint">Shown beside every reply, and when you publish.</span>
+          </div>
+        </div>
+        <input id="settings-avatar-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="handleAvatarPick(this)">
       </div>
 
       <hr class="settings-divider">
@@ -1379,43 +1404,39 @@ git push</code></div></div>
     <!-- Training Pane -->
     <div class="settings-body" data-settings-pane="training" style="display:none;">
 
-      <!-- AI Knowledge & Abilities (moved from Personalize) -->
       <div class="settings-field">
-        <label class="settings-label" for="settings-ai-knowledge">AI Knowledge &amp; Abilities</label>
-        <textarea class="settings-input settings-textarea" id="settings-ai-knowledge" placeholder="e.g. You can help with coding in Python, JavaScript, and Dart. You know about the DEVCON Barangay AI Code Camp curriculum. You are familiar with Flutter and Firebase."></textarea>
-        <span class="settings-hint">Tell the AI what it knows and what it can help with. Appended to the personality prompt so the AI stays aware of its own capabilities.</span>
+        <label class="settings-label" for="settings-ai-knowledge">What the AI Knows</label>
+        <textarea class="settings-input settings-textarea" id="settings-ai-knowledge" style="min-height:62px;" placeholder="e.g. Python, JavaScript, Dart, Flutter, Firebase, the DEVCON Barangay AI curriculum"></textarea>
+        <span class="settings-hint">Added to the personality prompt.</span>
       </div>
 
       <hr class="settings-divider">
 
       <div class="settings-field">
-        <label class="settings-label">Train Your AI with Files</label>
-        <span class="settings-hint" style="margin-bottom:6px;">
-          Upload reference files (text, markdown, JSON, CSV). Their content is injected into the AI's system prompt as background knowledge — so the AI "knows" what's in them. This is not model fine-tuning; it works locally in your browser.
-        </span>
+        <label class="settings-label">Reference Files</label>
 
         <div id="training-dropzone"
              ondragover="event.preventDefault(); this.classList.add('drag');"
              ondragleave="this.classList.remove('drag');"
              ondrop="handleTrainingDrop(event)"
              onclick="document.getElementById('training-file-input').click()"
-             style="margin-top:8px; padding:18px; border:2px dashed var(--border); border-radius:10px; text-align:center; cursor:pointer; color:var(--text-muted); font-size:13px; transition:all 0.15s;">
-          <div style="font-weight:600; color:var(--text-primary); margin-bottom:4px;">Drop files here or click to browse</div>
-          <div style="font-size:11.5px;">Accepts .txt, .md, .json, .csv, .log, .pdf, .docx &nbsp;·&nbsp; up to 2 MB each</div>
+             style="margin-top:3px; padding:14px; border:2px dashed var(--border); border-radius:10px; text-align:center; cursor:pointer; color:var(--text-muted); font-size:13px; transition:all 0.15s;">
+          <div style="font-weight:600; color:var(--text-primary);">Drop files or click to browse</div>
+          <div style="font-size:11px; margin-top:2px;">.txt .md .json .csv .log .pdf .docx &nbsp;·&nbsp; 2 MB each</div>
           <input id="training-file-input" type="file" multiple accept=".txt,.md,.markdown,.json,.csv,.log,.pdf,.doc,.docx,text/plain,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                  style="display:none;" onchange="handleTrainingFiles(this.files); this.value='';">
         </div>
 
-        <div id="training-files-list" style="margin-top:12px; display:flex; flex-direction:column; gap:6px;"></div>
-        <div id="training-files-meta" style="margin-top:6px; font-size:11.5px; color:var(--text-muted);"></div>
+        <div id="training-files-list" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;"></div>
+        <div id="training-files-meta" style="margin-top:4px; font-size:11px; color:var(--text-muted);"></div>
+        <span class="settings-hint">Contents become background knowledge in the AI's prompt. Stays in your browser.</span>
       </div>
 
       <hr class="settings-divider">
 
       <div class="settings-field">
-        <label class="settings-label" for="settings-training-notes">Additional Training Notes</label>
-        <textarea class="settings-input settings-textarea" id="settings-training-notes" placeholder="e.g. Always cite the uploaded barangay handbook when answering policy questions. Prefer examples from the uploaded curriculum."></textarea>
-        <span class="settings-hint">Free-form instructions about how the AI should use your uploaded files.</span>
+        <label class="settings-label" for="settings-training-notes">How to Use the Files</label>
+        <textarea class="settings-input settings-textarea" id="settings-training-notes" style="min-height:62px;" placeholder="e.g. Cite the barangay handbook for policy questions"></textarea>
       </div>
     </div>
 
@@ -1446,31 +1467,13 @@ git push</code></div></div>
 
       <hr class="settings-divider">
 
-      <!-- Prefix -->
-      <div class="settings-field">
-        <label class="settings-label" for="settings-prompt-prefix">Prefix</label>
-        <textarea class="settings-input settings-textarea" id="settings-prompt-prefix" placeholder="Added before every message you send…" style="min-height:60px;"></textarea>
-        <span class="settings-hint">Silently prepended to each message before it reaches the model — handy for standing instructions like “Answer in bullet points.”</span>
-      </div>
-
-      <hr class="settings-divider">
-
-      <!-- Suffix -->
-      <div class="settings-field">
-        <label class="settings-label" for="settings-prompt-suffix">Suffix</label>
-        <textarea class="settings-input settings-textarea" id="settings-prompt-suffix" placeholder="Added after every message you send…" style="min-height:60px;"></textarea>
-        <span class="settings-hint">Silently appended to each message before it reaches the model — e.g. “Keep it under 100 words.”</span>
-      </div>
-
-      <hr class="settings-divider">
-
       <!-- Temperature -->
       <div class="settings-field">
         <div class="slider-head">
           <label class="settings-label" for="settings-temperature">Temperature</label>
-          <span class="slider-value" id="settings-temperature-value">0.3</span>
+          <span class="slider-value" id="settings-temperature-value">1.0</span>
         </div>
-        <input class="settings-slider" id="settings-temperature" type="range" min="0" max="2" step="0.1" value="0.3" oninput="updateTemperatureLabel(this.value)">
+        <input class="settings-slider" id="settings-temperature" type="range" min="0" max="2" step="0.1" value="1" oninput="updateTemperatureLabel(this.value)">
         <div class="slider-scale">
           <span>Precise / Code</span>
           <span>Balanced</span>
@@ -1485,14 +1488,14 @@ git push</code></div></div>
       <div class="settings-field">
         <div class="slider-head">
           <label class="settings-label" for="settings-max-tokens">Max Tokens</label>
-          <span class="slider-value" id="settings-max-tokens-value">1024</span>
+          <span class="slider-value" id="settings-max-tokens-value">No limit</span>
         </div>
-        <input class="settings-slider" id="settings-max-tokens" type="range" min="128" max="4224" step="128" value="1024" oninput="updateMaxTokensLabel(this.value)">
+        <input class="settings-slider" id="settings-max-tokens" type="range" min="128" max="4224" step="128" value="4224" oninput="updateMaxTokensLabel(this.value)">
         <div class="slider-scale">
           <span>Short</span>
           <span>No limit</span>
         </div>
-        <span class="settings-hint">Caps how long each reply can be. Slide to the far right for no limit (model default).</span>
+        <span class="settings-hint">Caps how long each reply can be. Starts at no limit — slide left to cut replies short.</span>
       </div>
 
     </div>
@@ -1506,15 +1509,6 @@ git push</code></div></div>
           Your AI lives in this browser — which is why it's private, and why a plain <code>git push</code> would deploy the blank starter app instead of <em>yours</em>. Publishing writes everything you've customized into one file, <code>my-ai.json</code>, that ships with your code. Visitors get your AI exactly as you built it; only you can change what it is.
         </span>
       </div>
-
-      <div class="settings-field">
-        <label class="settings-label">What gets published</label>
-        <div id="publish-summary"></div>
-        <span class="settings-hint">API keys are never written to this file — it goes to GitHub, where anyone could read it. Your own hosted-model key belongs in a Vercel environment variable instead (step 4 below), where only the server can read it.</span>
-      </div>
-
-      <button class="settings-btn-primary" onclick="exportPublishConfig()" style="width:100%; margin-bottom:6px;">Download my-ai.json</button>
-      <span class="settings-hint" style="display:block; margin-bottom:14px;">Publishes what you last saved. Changed something just now? Hit <strong>Apply &amp; Save</strong> first, then come back.</span>
 
       <div class="settings-field">
         <label class="settings-label">Then, to go live</label>
@@ -1536,8 +1530,18 @@ git push</code></div></div>
         <span>Your published copy answers using that hosted model — so it works for anyone, anywhere, but it isn't the private one, and every message it answers spends a little of your own free allowance. <strong>The offline AI on this computer stays the real one</strong> — unmetered, however much you use it. The live link just proves you built it.</span>
       </div>
 
+      <div class="settings-field">
+        <label class="settings-label">What gets published</label>
+        <span class="settings-hint" style="margin-bottom:8px;">Your current setup. Change any of it in <a href="#" class="publish-link" onclick="gotoSettingsField('personalize');return false;">Personalize</a>, then Apply &amp; Save.</span>
+        <div id="publish-summary"></div>
+        <span class="settings-hint">API keys are never written to this file — it goes to GitHub, where anyone could read it. Your own hosted-model key belongs in a Vercel environment variable instead (step 4 above), where only the server can read it.</span>
+      </div>
+
       <button class="settings-btn-secondary" onclick="previewAsVisitor()" style="width:100%; margin-top:12px;">Preview what visitors will see</button>
       <span class="settings-hint" style="display:block; margin-top:6px;">Opens your own copy locked down, exactly as the world gets it. Needs <code>my-ai.json</code> in the folder already.</span>
+
+      <button class="settings-btn-primary" onclick="exportPublishConfig()" style="width:100%; margin-top:14px; margin-bottom:6px;">Download my-ai.json</button>
+      <span class="settings-hint" style="display:block;">Publishes what you last saved. Changed something just now? Hit <strong>Apply &amp; Save</strong> first, then come back.</span>
     </div>
 
     <div class="settings-footer">

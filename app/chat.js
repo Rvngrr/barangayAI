@@ -744,8 +744,26 @@ function rebuildApiMessages(displayMessages) {
   return out;
 }
 
+// Two kinds of chip, told apart by the prompt itself. A self-contained prompt
+// ("About Barangay AI") is already a whole question, so clicking it sends. A
+// prompt carrying a `[...]` slot needs the user's own text first, so clicking
+// it stages the prompt in the composer with the slot selected — the next
+// keystroke or paste replaces it. Reading the intent off the prompt rather
+// than declaring it per chip means the published SUGGESTIONS override and the
+// model's follow-up questions get the same behaviour without a second field.
 function suggest(text) {
-  document.getElementById('message-input').value = text;
+  const input = document.getElementById('message-input');
+  if (!input) return;
+  input.value = text;
+  syncComposer();
+  // A slot is a bracketed *phrase* — at least one space inside. Keeps a
+  // follow-up that merely mentions `items[0]` out of the staging branch.
+  const slot = /\[[^\]\n]*\s[^\]\n]*\]/.exec(text);
+  if (slot) {
+    input.focus();
+    input.setSelectionRange(slot.index, slot.index + slot[0].length);
+    return;
+  }
   sendMessage();
 }
 

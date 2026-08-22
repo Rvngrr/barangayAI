@@ -34,6 +34,8 @@ function getCurrentSession() {
 function loadSession(id) {
   const session = sessions.find(s => s.id === id);
   if (!session) return;
+  // An open prompt editor belongs to the conversation being left behind.
+  cancelPromptEdit();
   currentSessionId = id;
   messages = rebuildApiMessages(session.displayMessages);
   renderHistory();
@@ -73,6 +75,7 @@ function renderHistory() {
 function deleteSession(id) {
   const idx = sessions.findIndex(s => s.id === id);
   if (idx === -1) return;
+  cancelPromptEdit();
   sessions.splice(idx, 1);
   if (currentSessionId === id) {
     if (sessions.length) {
@@ -116,6 +119,13 @@ function renderSessionMessages(session) {
       t.className = 'message-time user';
       t.textContent = msg.time || '';
       chatArea.appendChild(t);
+      // A prompt whose send came back empty has no answer row to carry Ask
+      // again, so it gets one here — otherwise that version is a dead end.
+      const after = session.displayMessages[idx + 1];
+      attachMsgActions(t, {
+        role: 'user', text: msg.content, msgObj: msg,
+        noAnswer: !after || after.role !== 'assistant',
+      });
     } else if (msg.role === 'assistant') {
       const row = document.createElement('div');
       // Same rule as a live turn: the name label rides the first answer of a
@@ -144,6 +154,14 @@ function renderSessionMessages(session) {
       t.className = 'message-time';
       t.textContent = msg.time || '';
       chatArea.appendChild(t);
+      // Ask again and the answer's `‹ 2/3 ›` act on the prompt this answers, so
+      // they are only offered on the FIRST answer of a run — a second answer in
+      // the same run isn't a version of anything.
+      attachMsgActions(t, {
+        role: 'assistant',
+        text: wasCancelled ? '' : bodyText,
+        anchor: prev && prev.role === 'user' ? prev : null,
+      });
       if (msg.stats) renderMsgStats(chatArea, msg.stats);
     }
   });

@@ -1092,13 +1092,150 @@
   [data-theme="dark"] .bubble th { background: color-mix(in srgb, var(--dc-blue) 18%, transparent); color: var(--dc-accent); }
   [data-theme="dark"] .bubble tbody tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
 
+  /* Flex rather than a plain text line: the timestamp shares this row with the
+     message's Copy / Edit / Ask again buttons, which keeps them on the 720px
+     column and the 42px indent without a wrapper of their own. min-height holds
+     the row at its hovered size so revealing the buttons can't shift the
+     conversation above them. */
   .message-time {
     font-size: 10px;
     color: var(--text-muted);
     padding: 0 42px;
     margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 20px;
   }
-  .message-time.user { text-align: right; }
+  .message-time.user { justify-content: flex-end; }
+
+  /* MESSAGE ACTIONS — quiet until the message is hovered. The buttons are
+     always in the layout, only faded, so nothing moves when they appear. */
+  .msg-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+  }
+  @media (hover: hover) {
+    /* The fade is on the buttons, not on the row that holds them. Opacity on a
+       parent clips its children — a child cannot be more opaque than its
+       parent — so fading the container would take the version switcher with it,
+       and the switcher has to stay visible (see .msg-versions below). The `>`
+       matters: it reaches Copy / Edit / Ask again but not the switcher's own
+       arrows, which are nested one level deeper. */
+    .msg-actions > .msg-action {
+      opacity: 0;
+      transition: opacity 0.14s ease;
+    }
+    /* The bubble and this row are siblings under #chat-area, so hovering the
+       message reaches its actions through the adjacent-sibling combinator. */
+    .message-row:hover + .message-time .msg-actions > .msg-action,
+    .message-time:hover .msg-actions > .msg-action,
+    .msg-actions:focus-within > .msg-action { opacity: 1; }
+  }
+  .msg-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.12s, background 0.12s;
+  }
+  .msg-action:hover {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+  }
+  [data-theme="dark"] .msg-action:hover { background: rgba(255,255,255,0.07); }
+  .msg-action.copied { color: var(--dc-green); }
+  .msg-action svg { display: block; }
+  /* Editing or rewinding the thread while a reply is streaming would land that
+     reply on a conversation that no longer matches what it was asked. */
+  body.is-generating .msg-action {
+    pointer-events: none;
+    opacity: 0.3;
+  }
+
+  /* PROMPT EDITOR — takes the place of the user's bubble in the same row, so
+     the edited text sits exactly where the message it replaces was. */
+  .prompt-edit {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--bg-panel);
+    border: 1.5px solid var(--dc-accent);
+    border-radius: 20px 4px 20px 20px;
+  }
+  .prompt-edit-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.55;
+    overflow-y: auto;
+  }
+  .prompt-edit-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .prompt-edit-hint {
+    margin-right: auto;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .prompt-edit-btn {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
+  }
+  .prompt-edit-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+  .prompt-edit-btn.primary {
+    background: var(--dc-accent);
+    border-color: var(--dc-accent);
+    color: #fff;
+  }
+  .prompt-edit-btn.primary:hover { filter: brightness(1.08); color: #fff; }
+
+  /* VERSION SWITCHER — `‹ 2/3 ›`, on the prompt for wordings and on the answer
+     for re-rolls. Unlike its neighbours this is never hidden: a count is state,
+     not an offered action, and a version nobody can see they have is a version
+     they lose. It carries the muted colour of the timestamp it sits beside. */
+  .msg-versions {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+  }
+  .msg-version-count {
+    font-variant-numeric: tabular-nums;   /* 1/2 → 2/2 must not shift width */
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 0 1px;
+  }
+  .msg-action.msg-version-step { width: 16px; height: 20px; border-radius: 4px; }
+  .msg-action:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
 
   /* THINKING INDICATOR — expandable agent trace.
      The header is a quiet button; everything below it hangs off a single
@@ -4047,90 +4184,17 @@
   .guide-step-body a:hover { text-decoration: underline; }
   [data-theme="dark"] .guide-step-body a { color: var(--dc-accent); }
 
-  /* LOGO TOOLTIP — Alibaba Cloud attribution */
   .logo-wrapper {
     position: relative;
     display: inline-flex;
     cursor: default;
   }
-  .logo-tooltip {
-    position: absolute;
-    bottom: calc(100% + 10px);
-    left: 50%;
-    transform: translateX(-50%) translateY(4px);
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 9px 13px;
-    min-width: 168px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.14);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s, transform 0.2s;
-    z-index: 400;
-    text-align: center;
-    white-space: nowrap;
-  }
-  .logo-wrapper:hover .logo-tooltip {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  .logo-tooltip::after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    left: 50%;
-    transform: translateX(-50%) rotate(45deg);
-    width: 8px; height: 8px;
-    background: var(--bg-panel);
-    border-right: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-  }
-  .logo-tooltip-label {
-    font-size: 9px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.7px;
-    margin-bottom: 5px;
-  }
-  .logo-tooltip-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: linear-gradient(135deg, #FF6A00, #FF9A00);
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 11.5px;
-    font-weight: 800;
-    color: white;
-    letter-spacing: 0.3px;
-  }
-  /* Sidebar brand tooltip drops below the wordmark, left-aligned, so it
-     stays inside the sidebar regardless of how wide the wordmark is
-     (the wrapper now spans the wordmark, not a small square icon). */
   .sidebar-brand .logo-wrapper {
     flex: 1;
     min-width: 0;
   }
-  .sidebar-brand .logo-wrapper .logo-tooltip {
-    bottom: auto;
-    top: calc(100% + 10px);
-    left: 0;
-    transform: translateY(-4px);
-  }
-  .sidebar-brand .logo-wrapper:hover .logo-tooltip {
-    transform: translateY(0);
-  }
-  .sidebar-brand .logo-wrapper .logo-tooltip::after {
-    bottom: auto;
-    top: -5px;
-    left: 16px;
-    right: auto;
-    transform: rotate(225deg);
-  }
 
-  /* ALIBABA CLOUD FOOTER (legacy — kept for sidebar tooltip) */
+  /* ALIBABA CLOUD FOOTER (legacy) */
   .alibaba-badge {
     display: inline-flex;
     align-items: center;

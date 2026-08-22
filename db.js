@@ -388,7 +388,35 @@ function _messageMeta(m, keepPrompt) {
   if (m.kbSources)  meta.kbSources  = m.kbSources;
   if (m.followUps)  meta.followUps  = m.followUps;
   if (m.prompt && keepPrompt) meta.prompt = m.prompt;
+  if (m.versions)   { meta.versions = _versionsForStorage(m.versions); meta.active = m.active || 0; }
   return Object.keys(meta).length ? JSON.stringify(meta) : null;
+}
+
+// The alternative versions of one turn (app/actions.js), on their way to disk.
+//
+// Copied rather than written straight out, because the parked answers keep their
+// prompt snapshots in memory — that is what lets a student compare two versions
+// inspector to inspector — and those are exactly what must not be stored. By the
+// rule above, only the newest answer on the active path keeps a snapshot; a
+// version's answers are all older than that by definition. Without this a few
+// versions of a long conversation would put back the megabytes that rule exists
+// to keep out.
+//
+// The copy is shallow per message and the tails are already trimmed of the live
+// path, so this is cheap even on a heavily branched conversation.
+function _versionsForStorage(versions) {
+  return versions.map(v => ({
+    content: v.content,
+    time: v.time,
+    answerActive: v.answerActive || 0,
+    answers: (v.answers || []).map(a => ({
+      tail: (a.tail || []).map(m => {
+        const kept = {};
+        for (const k in m) if (k !== 'prompt') kept[k] = m[k];
+        return kept;
+      }),
+    })),
+  }));
 }
 
 // Ids of the rows already stored for a session, in order. Only `id` is selected:
@@ -426,10 +454,21 @@ function _syncSession(s) {
 
   let stored = _storedRowIds(s.id);
 
-  // The thread got shorter — "Clear chat", or a turn that produced only thinking
-  // and popped itself. The stored tail no longer lines up with memory, so this
-  // one session is rebuilt. Rare, and still cheaper than rebuilding all of them.
-  if (stored.length > msgs.length) {
+  // The stored rows no longer line up with memory position for position, so the
+  // append-only path below can't be used and this one session is rebuilt. Two
+  // ways that happens:
+  //
+  //   · the thread got shorter — "Clear chat", or a turn that produced only
+  //     thinking and popped itself
+  //   · `_rewrite`, set by app/actions.js when a prompt was edited or a version
+  //     switched. Length alone can't detect that: replacing a two-message turn
+  //     with another two-message turn leaves the count identical while the
+  //     anchor's own content and its version list have both changed.
+  //
+  // Rare either way — a version switch is a deliberate click, not a per-message
+  // event — and still cheaper than rebuilding every session.
+  if (s._rewrite || stored.length > msgs.length) {
+    delete s._rewrite;
     _db.run('DELETE FROM messages WHERE session_id = ?', [s.id]);
     _promptRow.delete(s.id);
     stored = [];

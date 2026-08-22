@@ -124,6 +124,11 @@ function setSendMode(streaming) {
   btn.title = streaming ? 'Stop generating' : 'Send message';
   btn.innerHTML = streaming ? _ICON_STOP : _ICON_SEND;
   syncSendState();
+  // The one place that knows a reply started or ended, so it's where the
+  // per-message actions are locked and unlocked. Editing a prompt or switching
+  // versions mid-stream would land the answer on a path that no longer matches
+  // the one it was asked about.
+  document.body.classList.toggle('is-generating', !!streaming);
 }
 
 function handleSendClick() {
@@ -918,7 +923,10 @@ function userAvatarMarkup() {
   return `<div class="avatar user" title="You">${USER_AVATAR_GLYPH}</div>`;
 }
 
-function appendUserMessage(text) {
+// `msgObj` is this turn's entry in session.displayMessages. Copy/Edit/Ask again
+// need it to locate the turn in the thread, and object identity is the only
+// reliable handle — see the note at the top of app/actions.js.
+function appendUserMessage(text, msgObj) {
   const chatArea = document.getElementById('chat-area');
   hideWelcome();
   const row = document.createElement('div');
@@ -929,6 +937,7 @@ function appendUserMessage(text) {
   time.className = 'message-time user';
   time.textContent = getTime();
   chatArea.appendChild(time);
+  attachMsgActions(time, { role: 'user', text, msgObj });
   scrollToBottom();
 }
 
@@ -1513,6 +1522,12 @@ function appendAIMessage(text, trace) {
   time.className = 'message-time';
   time.textContent = getTime();
   chatArea.appendChild(time);
+  // Copy hands over what the model actually wrote, not the rendered HTML — and
+  // not its reasoning, which is stripped from the stored answer too.
+  attachMsgActions(time, {
+    role: 'assistant',
+    text: (text || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim(),
+  });
   autoScroll();
   return row.querySelector('.bubble');
 }
@@ -1561,10 +1576,37 @@ document.getElementById('chat-area').addEventListener('scroll', function() {
 });
 
 // ── HISTORY ───────────────────────────────────────────────────────────
+
+// A conversation names itself after its first message. Kept whole rather than
+// cut to 32 characters with an ellipsis: the header and the sidebar item have
+// very different widths and both already ellipsize in CSS, so a "…" baked in
+// here showed up in a header with room to spare for another forty characters —
+// and it was still there when the window was made wider.
+//
+// The cap is a storage guard against a pasted essay as a first message, not a
+// display rule. It sits far past the point either place can show, so it is never
+// what the reader sees the text end at. Whitespace is collapsed to one line to
+// match a hand-typed rename (commitTitleRename).
+const AUTO_TITLE_MAX = 120;
+
+function autoTitleFrom(text) {
+  return (text || '').replace(/\s+/g, ' ').trim().slice(0, AUTO_TITLE_MAX);
+}
+
+// Was this title derived from that prompt, or typed by the student? Only a
+// derived one should follow the prompt when it changes (app/actions.js). The
+// second form is what conversations saved before titles were stored whole have,
+// so those keep working.
+function isAutoTitle(title, text) {
+  if (title === autoTitleFrom(text)) return true;
+  const legacy = (text || '').length > 32 ? (text || '').slice(0, 32) + '…' : (text || '');
+  return title === legacy;
+}
+
 function updateHistory(firstMessage) {
   const session = getCurrentSession();
   if (session && session.title === 'New conversation') {
-    session.title = firstMessage.length > 32 ? firstMessage.slice(0, 32) + '…' : firstMessage;
+    session.title = autoTitleFrom(firstMessage);
   }
   renderHistory();
   const titleEl = document.getElementById('chat-title');

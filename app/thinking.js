@@ -156,7 +156,11 @@ async function attachFollowUps(bubble, msgObj, question, answer) {
   if (el) { bubble.appendChild(el); autoScroll(); }
 }
 
-async function sendMessage() {
+// `anchor` is passed by Edit and Ask again (app/actions.js). It is a user
+// message that is ALREADY on the active path, already rendered, and already in
+// `messages` — so this send skips creating a prompt turn and answers the one
+// that is there. Called without it, the prompt comes from the composer as usual.
+async function sendMessage(anchor) {
   if (isStreaming) return;
   const input = document.getElementById('message-input');
   const text = input.value.trim();
@@ -168,6 +172,7 @@ async function sendMessage() {
   input.value = '';
   syncComposer();   // collapse back to the one-row layout and reset the height
   clearFollowUps();   // suggestions from the previous turn are stale now
+  noteSendStarted();   // retires a stale undo offer and any open prompt editor
   _userCancelled = false;
   _streamAbort = new AbortController();
   setSendMode(true);   // button becomes a Stop button
@@ -177,10 +182,17 @@ async function sendMessage() {
   if (!currentSessionId) createSession();
   const session = getCurrentSession();
 
-  const userTime = getTime();
-  appendUserMessage(text);
-  messages.push({ role: 'user', content: text });
-  if (session) session.displayMessages.push({ role: 'user', content: text, time: userTime });
+  // The turn this answer will belong to. For an anchored send it is already on
+  // the path, on screen, and in `messages`; otherwise it is created here. Built
+  // before the bubble either way, so the actions can be wired to the very object
+  // that lives in the thread rather than to a position in it.
+  let userMsgObj = anchor;
+  if (!anchor) {
+    userMsgObj = { role: 'user', content: text, time: getTime() };
+    appendUserMessage(text, userMsgObj);
+    messages.push({ role: 'user', content: text });
+    if (session) session.displayMessages.push(userMsgObj);
+  }
 
   appendTypingIndicator();
   const _tCtx = Date.now();
@@ -589,9 +601,12 @@ async function sendMessage() {
 
     if (!fullText && !cancelled) {
       msgBody.innerHTML = '<em style="color:var(--text-muted)">No response received.</em>';
-      // Remove the user message so this failed turn doesn't poison history
+      // Remove the user message so this failed turn doesn't poison history. An
+      // anchored prompt stays: it was on the path before this send, and taking it
+      // out would take its other versions with it. The version just created is
+      // simply left answerless, which Ask again can fill.
       messages.pop();
-      if (session && session.displayMessages.length) session.displayMessages.pop();
+      if (!anchor && session && session.displayMessages.length) session.displayMessages.pop();
     } else if (thinkOnly && !cancelled) {
       // Popping the answerless turn happens below (savedContent is empty, so the
       // existing "model only generated thinking" branch at the bottom handles it).
@@ -635,19 +650,23 @@ async function sendMessage() {
       // Cancelled turns stay visible but are excluded from the model's context.
       messages.pop();   // remove the unanswered user turn we pushed at send start
       if (session) session.displayMessages.push({ role: 'assistant', content: savedContent + CANCEL_MARK, time: aiTime, stats, cancelled: true, trace: traceData });
+      // Whatever it managed to write before Stop is still worth copying.
+      attachMsgActions(timeDiv, { role: 'assistant', text: savedContent, anchor: userMsgObj });
     } else if (savedContent) {
       messages.push({ role: 'assistant', content: savedContent });
       const msgObj = { role: 'assistant', content: savedContent, time: aiTime, stats,
         sources: _provenance.sources, kbSources: _provenance.kbSources,
         prompt: _promptSnapshot, trace: traceData };
       if (session) session.displayMessages.push(msgObj);
+      attachMsgActions(timeDiv, { role: 'assistant', text: savedContent, anchor: userMsgObj });
       // Fire-and-forget: the answer is already rendered, so this resolves in
       // the background and appends underneath if it comes back in time.
       attachFollowUps(bubble, msgObj, text, savedContent);
     } else if (fullText) {
-      // model only generated thinking — pop the user message so history stays consistent
+      // model only generated thinking — pop the user message so history stays
+      // consistent. An anchored prompt stays, for the reason above.
       messages.pop();
-      if (session && session.displayMessages.length) session.displayMessages.pop();
+      if (!anchor && session && session.displayMessages.length) session.displayMessages.pop();
     }
     updateHistory(text);
     setConnected(true);

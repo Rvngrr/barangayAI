@@ -13,7 +13,7 @@
 // on activate, so a stale app can never outlive a deploy.
 // ─────────────────────────────────────────────────────────────────────
 
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const CACHE_NAME    = `barangay-ai-${CACHE_VERSION}`;
 
 // The shell: everything required to boot and hold a conversation offline.
@@ -30,6 +30,7 @@ const PRECACHE = [
   'app/onboarding.js',
   'app/models.js',
   'app/chat.js',
+  'app/actions.js',
   'app/thinking.js',
   'app/publish.js',
   'app/init.js',

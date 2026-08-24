@@ -125,7 +125,7 @@ function hideOwnerPitchFooter() {
   if (tip) tip.remove();
 }
 
-// The camp's whole claim is "free, private, no cloud" — and on a published
+// The camp's whole claim is "free, private, no subscription" — and on a published
 // site that is FALSE: replies come from a hosted model through /api. Saying
 // so plainly is the difference between the demo proving the lesson and
 // quietly contradicting it.
@@ -150,7 +150,7 @@ function renderPublishedCredit() {
   el.id = 'published-credit';
   el.innerHTML = `
     <div class="published-credit-main">${escHtml(name)} — built by ${escHtml(who || 'a student')} at a DEVCON Barangay AI Code Camp</div>
-    <div class="published-credit-note">This public demo answers using a hosted model. The real one runs offline on ${escHtml(who || 'their')}${who ? "'s" : ''} own computer — free, private, no cloud. <a href="https://github.com/Spod101/barangayAI" target="_blank" rel="noopener">Build your own →</a></div>`;
+    <div class="published-credit-note">This public demo answers using a hosted model. The real one runs offline on ${escHtml(who || 'their')}${who ? "'s" : ''} own computer — free, private, no subscription. <a href="https://github.com/Spod101/barangayAI" target="_blank" rel="noopener">Build your own →</a></div>`;
   host.appendChild(el);
 }
 
@@ -180,6 +180,9 @@ function buildPublishConfig() {
       welcome_greeting: s.welcome_greeting || '',
       reply_language:   s.reply_language || 'english',
       training_notes:   s.training_notes || '',
+      // The owner's refusal list travels with the AI: a published demo is the
+      // copy strangers actually talk to, so it is the copy that most needs it.
+      guardrail_keywords: s.guardrail_keywords || '',
       temperature:      (typeof s.temperature === 'number') ? s.temperature : DEFAULT_TEMPERATURE,
       max_tokens:       (s.max_tokens === null || typeof s.max_tokens === 'number') ? s.max_tokens : DEFAULT_MAX_TOKENS,
       personas:         Array.isArray(s.personas) ? s.personas : [],
@@ -254,6 +257,8 @@ function updatePublishSummary() {
   const el = document.getElementById('publish-summary');
   if (!el) return;
   const cfg = buildPublishConfig();
+  const guards = (cfg.settings.guardrail_keywords || '')
+    .split(/[\n,;]+/).map(w => w.trim()).filter(Boolean);
   const rows = [
     ['Name', escHtml(cfg.settings.ai_name)],
     ['Picture', cfg.settings.ai_avatar
@@ -264,6 +269,9 @@ function updatePublishSummary() {
     ['Sources', cfg.sources.length
       ? `${cfg.sources.length} file${cfg.sources.length === 1 ? '' : 's'}`
       : `none · ${settingsLink('add files', 'training', 'training-dropzone')}`],
+    ['Guardrails', guards.length
+      ? `${guards.length} blocked topic${guards.length === 1 ? '' : 's'}`
+      : `none · ${settingsLink('add some', 'training', 'settings-guardrail-keywords')}`],
     ['Your name', cfg.creator_name
       ? escHtml(cfg.creator_name)
       : `<span class="publish-warn">⚠ required</span> — set it in ${settingsLink('Personalize', 'personalize', 'settings-creator-name')}`],

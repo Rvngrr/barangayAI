@@ -5140,6 +5140,53 @@ body.visitor-mode [data-owner-only]:not([data-visitor-ok]) { display: none !impo
 }
 .published-credit-note a:hover { text-decoration: underline; }
 
+/* The maker's credit on a PUBLISHED site is the whole point of the demo — a
+   student's name on a thing that works — so there it reads as a badge, not as
+   a caption. Local and unpublished copies keep the plain .welcome-brief line. */
+body.visitor-mode .welcome-brief {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  /* Pulled up against the name it credits, with a little more air before the
+     chips, so it groups with the hero instead of floating between blocks. */
+  margin: -6px 0 6px;
+}
+.welcome-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--dc-gold) 45%, transparent);
+  background: color-mix(in srgb, var(--dc-gold) 11%, transparent);
+  line-height: 1.15;
+}
+.welcome-credit-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.welcome-credit-name {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+.welcome-credit-note {
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 0.05px;
+}
+@media (max-width: 640px) {
+  .welcome-credit { padding: 7px 14px; gap: 7px; }
+  .welcome-credit-name { font-size: 15px; }
+  .welcome-credit-note { font-size: 11px; }
+}
+
 /* Read-only source rows — no remove button, no include/exclude checkbox */
 body.visitor-mode .kb-item { cursor: default; }
 

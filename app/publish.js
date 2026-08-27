@@ -107,9 +107,9 @@ function lockVisitorUI() {
 
   // The markup ships "100% local, no cloud" hardcoded. On a published site
   // that is a false claim — fix the copy that's already on screen; the
-  // re-rendered welcome screen gets it from welcomeBriefText() directly.
+  // re-rendered welcome screen gets it from welcomeBriefHTML() directly.
   const brief = document.getElementById('welcome-brief');
-  if (brief) brief.textContent = welcomeBriefText();
+  if (brief) brief.innerHTML = welcomeBriefHTML();
 
   renderPublishedCredit();
 }
@@ -129,13 +129,19 @@ function hideOwnerPitchFooter() {
 // site that is FALSE: replies come from a hosted model through /api. Saying
 // so plainly is the difference between the demo proving the lesson and
 // quietly contradicting it.
-function welcomeBriefText() {
+// On a published site the credit splits in two so the maker's name can carry
+// the weight: a badge with who built it, the honest small print under it.
+// Local and unpublished copies keep the plain one-line caption.
+function welcomeBriefHTML() {
   const cfg = window.PUBLISHED_CONFIG;
   if (!window.IS_VISITOR || !cfg) return 'Built by Filipino developers · 100% local, no cloud';
   const who = (cfg.creator_name || '').trim();
-  return who
-    ? `Built by ${who} at a DEVCON Barangay AI Code Camp · public demo, hosted model`
-    : 'Built at a DEVCON Barangay AI Code Camp · public demo, hosted model';
+  return `
+    <span class="welcome-credit">
+      <span class="welcome-credit-label">Built by</span>
+      <span class="welcome-credit-name">${escHtml(who || 'a student')}</span>
+    </span>
+    <span class="welcome-credit-note">at a DEVCON Barangay AI Code Camp · public demo, hosted model</span>`;
 }
 
 function renderPublishedCredit() {
@@ -295,7 +301,7 @@ window.isLocalHost            = isLocalHost;
 window.hydratePublishedSettings = hydratePublishedSettings;
 window.lockVisitorUI          = lockVisitorUI;
 window.hideOwnerPitchFooter   = hideOwnerPitchFooter;
-window.welcomeBriefText       = welcomeBriefText;
+window.welcomeBriefHTML       = welcomeBriefHTML;
 window.exportPublishConfig    = exportPublishConfig;
 window.updatePublishSummary   = updatePublishSummary;
 window.gotoSettingsField      = gotoSettingsField;

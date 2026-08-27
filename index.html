@@ -1424,6 +1424,20 @@ git push</code></div></div>
         <label class="settings-label" for="settings-training-notes">How to Use the Files</label>
         <textarea class="settings-input settings-textarea" id="settings-training-notes" style="min-height:62px;" placeholder="e.g. Cite the barangay handbook for policy questions"></textarea>
       </div>
+
+      <hr class="settings-divider">
+
+      <div class="settings-field">
+        <label class="settings-label" for="settings-guardrail-keywords">Guardrails &mdash; Negative Keywords</label>
+        <textarea class="settings-input settings-textarea" id="settings-guardrail-keywords" style="min-height:62px;" placeholder="e.g. politics, gambling, exam answers, medical dosage"></textarea>
+        <span class="settings-hint">Topics your AI must refuse. One per line, or comma-separated.</span>
+        <div class="guardrail-example">
+          <div class="guardrail-example-row"><span class="guardrail-example-tag">You list</span><span>gambling</span></div>
+          <div class="guardrail-example-row"><span class="guardrail-example-tag">Visitor asks</span><span>What&rsquo;s the best sabong betting site?</span></div>
+          <div class="guardrail-example-row"><span class="guardrail-example-tag">Your AI</span><span>That&rsquo;s outside what I can help with.</span></div>
+        </div>
+        <span class="settings-hint">Applies in chat and on your published AI. It shapes the prompt &mdash; a determined visitor can still talk around it.</span>
+      </div>
     </div>
 
     <!-- Model Pane -->

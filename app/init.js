@@ -22,7 +22,7 @@ function resetWelcomeScreen() {
       <div class="welcome-title">${_activeName}</div>
       <div class="welcome-greeting">${greeting} <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M5 3v4"/><path d="M3 5h4"/><path d="M19 17v4"/><path d="M17 19h4"/></svg></div>
     </div>
-    <div class="welcome-brief" id="welcome-brief">${welcomeBriefText()}</div>
+    <div class="welcome-brief" id="welcome-brief">${welcomeBriefHTML()}</div>
     <div class="suggestion-chips" id="suggestion-grid-welcome">
       <button class="suggestion-chip" onclick="suggest('What is DEVCON Barangay AI Code Camps? What will I learn and build today?')">
         <span class="suggestion-chip-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span> About Barangay AI

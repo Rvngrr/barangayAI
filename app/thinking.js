@@ -231,6 +231,18 @@ async function sendMessage(anchor) {
     _languageRule, 'Settings › Personalize › Reply language');
   _part('Extra knowledge you wrote', _runtimeKnowledge, 'Settings › Personalize › Knowledge');
 
+  // Guardrails. The student lists loose keywords; they become one explicit
+  // refusal rule here, because a bare word list in a prompt reads as a topic
+  // hint — models answer happily about a topic they were only shown the name of.
+  const _guardrails = (window._GUARDRAIL_KEYWORDS_ACTIVE || '')
+    .split(/[\n,;]+/).map(w => w.trim()).filter(Boolean);
+  if (_guardrails.length) {
+    const _guardrailRule = `\n\n## Guardrails (strict)\nYou must NOT answer questions about these topics: ${_guardrails.join(', ')}.\nIf a question touches any of them, decline in one short sentence, say it is outside what you can help with, and stop there. Do not hint at an answer, answer partially, or explain the restriction. Everything else you answer normally.`;
+    systemPrompt += _guardrailRule;
+    _part(`Guardrails: ${_guardrails.length} blocked topic${_guardrails.length !== 1 ? 's' : ''}`,
+      _guardrailRule, 'Settings › Training › Guardrails');
+  }
+
   const _trainingFiles = Array.isArray(window._TRAINING_FILES_ACTIVE) ? window._TRAINING_FILES_ACTIVE : [];
   const _trainingNotes = window._TRAINING_NOTES_ACTIVE || '';
   let _retrievedCount = 0, _totalChunkCount = 0;

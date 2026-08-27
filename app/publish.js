@@ -107,9 +107,9 @@ function lockVisitorUI() {
 
   // The markup ships "100% local, no cloud" hardcoded. On a published site
   // that is a false claim — fix the copy that's already on screen; the
-  // re-rendered welcome screen gets it from welcomeBriefText() directly.
+  // re-rendered welcome screen gets it from welcomeBriefHTML() directly.
   const brief = document.getElementById('welcome-brief');
-  if (brief) brief.textContent = welcomeBriefText();
+  if (brief) brief.innerHTML = welcomeBriefHTML();
 
   renderPublishedCredit();
 }
@@ -125,17 +125,23 @@ function hideOwnerPitchFooter() {
   if (tip) tip.remove();
 }
 
-// The camp's whole claim is "free, private, no cloud" — and on a published
+// The camp's whole claim is "free, private, no subscription" — and on a published
 // site that is FALSE: replies come from a hosted model through /api. Saying
 // so plainly is the difference between the demo proving the lesson and
 // quietly contradicting it.
-function welcomeBriefText() {
+// On a published site the credit splits in two so the maker's name can carry
+// the weight: a badge with who built it, the honest small print under it.
+// Local and unpublished copies keep the plain one-line caption.
+function welcomeBriefHTML() {
   const cfg = window.PUBLISHED_CONFIG;
   if (!window.IS_VISITOR || !cfg) return 'Built by Filipino developers · 100% local, no cloud';
   const who = (cfg.creator_name || '').trim();
-  return who
-    ? `Built by ${who} at a DEVCON Barangay AI Code Camp · public demo, hosted model`
-    : 'Built at a DEVCON Barangay AI Code Camp · public demo, hosted model';
+  return `
+    <span class="welcome-credit">
+      <span class="welcome-credit-label">Built by</span>
+      <span class="welcome-credit-name">${escHtml(who || 'a student')}</span>
+    </span>
+    <span class="welcome-credit-note">at a DEVCON Barangay AI Code Camp · public demo, hosted model</span>`;
 }
 
 function renderPublishedCredit() {
@@ -150,7 +156,7 @@ function renderPublishedCredit() {
   el.id = 'published-credit';
   el.innerHTML = `
     <div class="published-credit-main">${escHtml(name)} — built by ${escHtml(who || 'a student')} at a DEVCON Barangay AI Code Camp</div>
-    <div class="published-credit-note">This public demo answers using a hosted model. The real one runs offline on ${escHtml(who || 'their')}${who ? "'s" : ''} own computer — free, private, no cloud. <a href="https://github.com/Spod101/barangayAI" target="_blank" rel="noopener">Build your own →</a></div>`;
+    <div class="published-credit-note">This public demo answers using a hosted model. The real one runs offline on ${escHtml(who || 'their')}${who ? "'s" : ''} own computer — free, private, no subscription. <a href="https://github.com/Spod101/barangayAI" target="_blank" rel="noopener">Build your own →</a></div>`;
   host.appendChild(el);
 }
 
@@ -180,6 +186,9 @@ function buildPublishConfig() {
       welcome_greeting: s.welcome_greeting || '',
       reply_language:   s.reply_language || 'english',
       training_notes:   s.training_notes || '',
+      // The owner's refusal list travels with the AI: a published demo is the
+      // copy strangers actually talk to, so it is the copy that most needs it.
+      guardrail_keywords: s.guardrail_keywords || '',
       temperature:      (typeof s.temperature === 'number') ? s.temperature : DEFAULT_TEMPERATURE,
       max_tokens:       (s.max_tokens === null || typeof s.max_tokens === 'number') ? s.max_tokens : DEFAULT_MAX_TOKENS,
       personas:         Array.isArray(s.personas) ? s.personas : [],
@@ -254,6 +263,8 @@ function updatePublishSummary() {
   const el = document.getElementById('publish-summary');
   if (!el) return;
   const cfg = buildPublishConfig();
+  const guards = (cfg.settings.guardrail_keywords || '')
+    .split(/[\n,;]+/).map(w => w.trim()).filter(Boolean);
   const rows = [
     ['Name', escHtml(cfg.settings.ai_name)],
     ['Picture', cfg.settings.ai_avatar
@@ -264,6 +275,9 @@ function updatePublishSummary() {
     ['Sources', cfg.sources.length
       ? `${cfg.sources.length} file${cfg.sources.length === 1 ? '' : 's'}`
       : `none · ${settingsLink('add files', 'training', 'training-dropzone')}`],
+    ['Guardrails', guards.length
+      ? `${guards.length} blocked topic${guards.length === 1 ? '' : 's'}`
+      : `none · ${settingsLink('add some', 'training', 'settings-guardrail-keywords')}`],
     ['Your name', cfg.creator_name
       ? escHtml(cfg.creator_name)
       : `<span class="publish-warn">⚠ required</span> — set it in ${settingsLink('Personalize', 'personalize', 'settings-creator-name')}`],
@@ -287,7 +301,7 @@ window.isLocalHost            = isLocalHost;
 window.hydratePublishedSettings = hydratePublishedSettings;
 window.lockVisitorUI          = lockVisitorUI;
 window.hideOwnerPitchFooter   = hideOwnerPitchFooter;
-window.welcomeBriefText       = welcomeBriefText;
+window.welcomeBriefHTML       = welcomeBriefHTML;
 window.exportPublishConfig    = exportPublishConfig;
 window.updatePublishSummary   = updatePublishSummary;
 window.gotoSettingsField      = gotoSettingsField;

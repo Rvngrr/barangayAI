@@ -42,6 +42,7 @@ function applySettings(s) {
   window._TRAINING_FILES_MASTER = Array.isArray(s.training_files) ? s.training_files : [];
   window._TRAINING_FILES_ACTIVE = window._TRAINING_FILES_MASTER.filter(f => !_KB_DISABLED.has(f.name));
   window._TRAINING_NOTES_ACTIVE = s.training_notes || '';
+  window._GUARDRAIL_KEYWORDS_ACTIVE = s.guardrail_keywords || '';
   let _lang = s.reply_language || 'english';
   if (_lang === 'tagalog') _lang = 'filipino';
   window._REPLY_LANG_ACTIVE = _lang;
@@ -310,6 +311,8 @@ function openSettings() {
   window._TRAINING_FILES_DRAFT = Array.isArray(s.training_files) ? s.training_files.slice() : [];
   const notesInput = document.getElementById('settings-training-notes');
   if (notesInput) notesInput.value = s.training_notes || '';
+  const guardInput = document.getElementById('settings-guardrail-keywords');
+  if (guardInput) guardInput.value = s.guardrail_keywords || '';
   renderTrainingFilesList();
 
   // Persona tab
@@ -407,6 +410,7 @@ function applyAndSaveSettings() {
     creator_name:     (document.getElementById('settings-creator-name')?.value.trim() || ''),
     training_files:   (window._TRAINING_FILES_DRAFT || []),
     training_notes:   (document.getElementById('settings-training-notes')?.value.trim() || ''),
+    guardrail_keywords: (document.getElementById('settings-guardrail-keywords')?.value.trim() || ''),
     reply_language:   (document.querySelector('#lang-picker .lang-chip.active')?.dataset.lang || 'english'),
     temperature:      parseFloat(document.getElementById('settings-temperature')?.value ?? String(DEFAULT_TEMPERATURE)),
     max_tokens:       (() => {

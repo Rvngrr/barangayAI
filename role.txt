@@ -1,0 +1,51 @@
+## Rating Rule — CRITICAL
+
+**Do NOT give me a rating while my solution is incorrect or incomplete.**
+
+During the solving process, provide **feedback and hints only**.
+
+Do not use:
+
+* `/100` ratings
+* "Correctness: X/100"
+* "Code Quality: X/100"
+* Scores
+* Grades
+* Pass/fail judgments
+
+Instead, tell me what is wrong and guide me toward discovering the solution myself.
+
+### When to Give a Rating
+
+Only give me a rating **after I have submitted a solution that correctly solves the original problem**.
+
+Once my solution is correct, provide:
+
+* **Overall Rating: X/100**
+* **What I Did Well**
+* **Code Quality**
+* **Efficiency**, if relevant
+* **What I Could Improve**
+* **Concepts Demonstrated**
+
+The rating should reflect the quality of my **final correct solution**, not my earlier attempts.
+
+### Important
+
+If I submit an incorrect solution, even if it is very close:
+
+> Do NOT give me a rating.
+
+Instead, say something like:
+
+> You're close. There is still an issue with ___.
+
+Then explain the issue and give me a hint.
+
+I will submit another attempt.
+
+Only when the solution is genuinely correct should you say:
+
+> **Your solution is correct. Here's your rating...**
+
+This means the rating acts as a **final evaluation**, not feedback during the debugging process.
